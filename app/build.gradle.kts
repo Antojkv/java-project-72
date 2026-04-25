@@ -1,9 +1,13 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
     id("application")
     id("checkstyle")
     id("com.github.ben-manes.versions") version "0.53.0"
     id("org.sonarqube") version "7.2.3.7755"
     id("jacoco")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 sonar {
@@ -36,29 +40,26 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("info.picocli:picocli:4.7.7")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
     testImplementation("org.assertj:assertj-core:3.22.0")
+    implementation("io.javalin:javalin:6.1.3")
+    implementation("org.slf4j:slf4j-simple:2.0.16")
+    compileOnly("org.projectlombok:lombok:1.18.34")
+    annotationProcessor("org.projectlombok:lombok:1.18.34")
+    implementation("gg.jte:jte:3.1.9")
+
 }
 
 tasks.test {
     useJUnitPlatform()
 
     testLogging {
-        showStandardStreams = true
-
-        events(
-            org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED,
-            org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED,
-            org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED,
-            org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_OUT,
-            org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR,
-        )
-
-        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-
-        showExceptions = true
-        showCauses = true
+        exceptionFormat = TestExceptionFormat.FULL
+        events = mutableSetOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
         showStackTraces = true
+        showCauses = true
+        showStandardStreams = true
     }
 }
 
@@ -87,4 +88,17 @@ tasks.jacocoTestReport {
 tasks.named("sonar") {
     dependsOn(tasks.jacocoTestReport)
     mustRunAfter(tasks.jacocoTestReport)
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "hexlet.code.App"
+    }
+}
+
+tasks.shadowJar {
+    archiveBaseName.set("app")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+    mergeServiceFiles()
 }
