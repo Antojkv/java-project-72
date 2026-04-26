@@ -2,15 +2,12 @@ FROM gradle:8.10-jdk21
 
 WORKDIR /app
 
-# Копируем всё содержимое папки app
-COPY app .
+COPY app/src ./src
+COPY app/build.gradle.kts .
+COPY app/settings.gradle.kts .
 
-# Даем права на выполнение
-RUN chmod +x gradlew
-
-# Сборка через wrapper
-RUN ./gradlew clean build
+RUN gradle clean build
 
 EXPOSE 7070
 
-CMD ["./gradlew", "run"]
+CMD ["gradle", "run"]
