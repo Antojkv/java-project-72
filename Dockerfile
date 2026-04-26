@@ -2,12 +2,14 @@ FROM gradle:8.10-jdk21
 
 WORKDIR /app
 
-COPY app/src ./src
-COPY app/build.gradle.kts .
-COPY app/settings.gradle.kts .
+# Копируем ВСЁ, включая config/checkstyle/
+COPY app /app
 
-RUN gradle clean build
+WORKDIR /app
+
+RUN chmod +x gradlew
+RUN ./gradlew clean build
 
 EXPOSE 7070
 
-CMD ["gradle", "run"]
+CMD ["./gradlew", "run"]
