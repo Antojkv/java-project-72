@@ -65,7 +65,7 @@ tasks.test {
 }
 
 application {
-    mainClass.set("hexlet.code.app")
+    mainClass.set("hexlet.code.App")
 }
 
 jacoco {
