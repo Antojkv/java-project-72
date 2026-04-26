@@ -2,14 +2,12 @@ FROM gradle:8.10-jdk21
 
 WORKDIR /app
 
-# Копируем ВСЁ, включая config/checkstyle/
-COPY app /app
+# Копируем всё
+COPY app .
 
-WORKDIR /app
-
-RUN chmod +x gradlew
-RUN ./gradlew clean build
+# Используем системный gradle, а не wrapper
+RUN gradle clean build
 
 EXPOSE 7070
 
-CMD ["./gradlew", "run"]
+CMD ["gradle", "run"]
