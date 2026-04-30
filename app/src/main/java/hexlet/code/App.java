@@ -32,13 +32,19 @@ public class App {
         setupDatabase();
 
         TemplateEngine templateEngine = createTemplateEngine();
+        System.out.println("TemplateEngine created successfully"); // Отладка
 
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
             config.fileRenderer(new JavalinJte(templateEngine));
         });
 
+        app.before(ctx -> {
+            ctx.contentType("text/html; charset=utf-8");
+        });
+
         app.get("/", ctx -> {
+            System.out.println("Rendering index.jte"); // Отладка
             ctx.render("index.jte");
         });
 
@@ -48,6 +54,11 @@ public class App {
                 ctx.sessionAttribute("flash", "URL не может быть пустым");
                 ctx.redirect("/");
                 return;
+            }
+
+            // Нормализация URL
+            if (!name.startsWith("http")) {
+                name = "https://" + name;
             }
 
             Url url = new Url(name);

@@ -107,3 +107,8 @@ tasks.shadowJar {
     archiveVersion.set("")
     mergeServiceFiles()
 }
+
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+}
+
