@@ -3,7 +3,6 @@ package hexlet.code;
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.resolve.DirectoryCodeResolver;
-import gg.jte.resolve.ResourceCodeResolver;
 import hexlet.code.repository.BaseRepository;
 import hexlet.code.repository.UrlRepository;
 import hexlet.code.model.Url;
@@ -26,22 +25,19 @@ public class App {
     private static HikariDataSource dataSource;
 
     private static TemplateEngine createTemplateEngine() {
-        try {
-            ClassLoader classLoader = App.class.getClassLoader();
-            ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
-            return TemplateEngine.create(codeResolver, ContentType.Html);
-        } catch (Exception e) {
-            Path path = Paths.get("src/main/resources/templates").toAbsolutePath();
-            DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(path);
-            return TemplateEngine.create(codeResolver, ContentType.Html);
-        }
+        Path path = Paths.get("src/main/jte").toAbsolutePath();
+        DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(path);
+        TemplateEngine engine = TemplateEngine.create(codeResolver, ContentType.Html);
+        engine.setBinaryStaticContent(true);
+        System.out.println("Loading templates from: " + path);
+        return engine;
     }
 
     public static Javalin getApp() throws Exception {
         setupDatabase();
 
         TemplateEngine templateEngine = createTemplateEngine();
-        System.out.println("TemplateEngine created successfully"); // Отладка
+        System.out.println("TemplateEngine created successfully");
 
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
@@ -52,11 +48,19 @@ public class App {
             ctx.contentType("text/html; charset=utf-8");
         });
 
+        // Главная страница
         app.get("/", ctx -> {
-            System.out.println("Rendering index.jte"); // Отладка
-            ctx.render("index.jte");
+            String flash = ctx.sessionAttribute("flash");
+            ctx.sessionAttribute("flash", null);
+
+            if (flash != null) {
+                ctx.render("index.jte", Map.of("flash", flash));
+            } else {
+                ctx.render("index.jte", Map.of());
+            }
         });
 
+        // Добавление URL
         app.post("/urls", ctx -> {
             String name = ctx.formParam("url");
             if (name == null || name.isBlank()) {
@@ -70,6 +74,14 @@ public class App {
                 name = "https://" + name;
             }
 
+            // Проверка на дубликат
+            var existingUrl = UrlRepository.findByName(name);
+            if (existingUrl.isPresent()) {
+                ctx.sessionAttribute("flash", "Страница уже существует");
+                ctx.redirect("/urls/" + existingUrl.get().getId());
+                return;
+            }
+
             Url url = new Url(name);
             url.setCreatedAt(Timestamp.from(Instant.now()));
             UrlRepository.save(url);
@@ -78,16 +90,22 @@ public class App {
             ctx.redirect("/urls/" + url.getId());
         });
 
+        // Список URL
         app.get("/urls", ctx -> {
             var urls = UrlRepository.all();
-            ctx.render("urls/index.jte", Map.of("urls", urls));
+            String flash = ctx.sessionAttribute("flash");
+            ctx.sessionAttribute("flash", null);
+            ctx.render("urls/index.jte", Map.of("urls", urls, "flash", flash));
         });
 
+        // Страница конкретного URL
         app.get("/urls/{id}", ctx -> {
             Long id = Long.parseLong(ctx.pathParam("id"));
             var url = UrlRepository.find(id);
             if (url.isPresent()) {
-                ctx.render("urls/show.jte", Map.of("url", url.get()));
+                String flash = ctx.sessionAttribute("flash");
+                ctx.sessionAttribute("flash", null);
+                ctx.render("urls/show.jte", Map.of("url", url.get(), "flash", flash));
             } else {
                 ctx.status(404).result("URL not found");
             }
@@ -143,5 +161,6 @@ public class App {
         Javalin app = getApp();
         app.start(port);
 
+        System.out.println("Application started on port " + port);
     }
 }

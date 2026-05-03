@@ -8,6 +8,7 @@ plugins {
     id("org.sonarqube") version "7.2.3.7755"
     id("jacoco")
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("gg.jte.gradle") version "3.2.4"
 }
 
 sonar {
@@ -26,6 +27,16 @@ sonar {
 checkstyle {
     toolVersion = "10.12.4"
     configFile = file("config/checkstyle/checkstyle.xml")
+}
+
+tasks.checkstyleMain {
+    exclude("**/generated/**")
+    exclude("**/jte/**")
+}
+
+tasks.checkstyleTest {
+    exclude("**/generated/**")
+    exclude("**/jte/**")
 }
 
 group = "hexlet.code"
@@ -106,9 +117,19 @@ tasks.shadowJar {
     archiveClassifier.set("")
     archiveVersion.set("")
     mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
+tasks.processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+jte {
+    generate()
+    binaryStaticContent = true
+    kotlinCompileArgs = arrayOf("-jvm-target", "21")
+}

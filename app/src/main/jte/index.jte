@@ -1,3 +1,5 @@
+@param String flash
+
 @template(layout.jte)
 
 <div class="row">
@@ -8,12 +10,12 @@
             <div class="col-8">
                 <label for="url-name" class="visually-hidden">Url для проверки</label>
                 <input
-                          id="url-name"
-                          type="text"
-                          name="url"
-                          class="form-control form-control-lg"
-                          placeholder="https://www.example.com"
-                        >
+                    id="url-name"
+                    type="text"
+                    name="url"
+                    class="form-control form-control-lg"
+                    placeholder="https://www.example.com"
+                >
             </div>
             <div class="col-2">
                 <input type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
