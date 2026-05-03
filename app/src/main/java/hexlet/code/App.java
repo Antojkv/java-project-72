@@ -2,6 +2,7 @@ package hexlet.code;
 
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
+import gg.jte.resolve.DirectoryCodeResolver;
 import gg.jte.resolve.ResourceCodeResolver;
 import hexlet.code.repository.BaseRepository;
 import hexlet.code.repository.UrlRepository;
@@ -13,6 +14,8 @@ import io.javalin.rendering.template.JavalinJte;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
@@ -23,9 +26,15 @@ public class App {
     private static HikariDataSource dataSource;
 
     private static TemplateEngine createTemplateEngine() {
-        ClassLoader classLoader = App.class.getClassLoader();
-        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
-        return TemplateEngine.create(codeResolver, ContentType.Html);
+        try {
+            ClassLoader classLoader = App.class.getClassLoader();
+            ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
+            return TemplateEngine.create(codeResolver, ContentType.Html);
+        } catch (Exception e) {
+            Path path = Paths.get("src/main/resources/templates").toAbsolutePath();
+            DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(path);
+            return TemplateEngine.create(codeResolver, ContentType.Html);
+        }
     }
 
     public static Javalin getApp() throws Exception {
