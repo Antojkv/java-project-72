@@ -29,7 +29,6 @@ public class App {
         DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(path);
         TemplateEngine engine = TemplateEngine.create(codeResolver, ContentType.Html);
         engine.setBinaryStaticContent(true);
-        System.out.println("Loading templates from: " + path);
         return engine;
     }
 
