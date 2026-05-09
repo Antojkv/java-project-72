@@ -8,7 +8,6 @@ plugins {
     id("org.sonarqube") version "7.2.3.7755"
     id("jacoco")
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("gg.jte.gradle") version "3.2.4"
 }
 
 sonar {
@@ -55,14 +54,15 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
     testImplementation("org.assertj:assertj-core:3.22.0")
-    implementation("io.javalin:javalin:6.1.3")
-    implementation("org.slf4j:slf4j-simple:2.0.16")
+    implementation("org.slf4j:slf4j-simple:2.0.17")
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
     implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("com.h2database:h2:2.3.232")
     implementation("org.postgresql:postgresql:42.7.3")
-    implementation("io.javalin:javalin-rendering:6.1.3")
+    implementation("io.javalin:javalin:6.7.0")
+    implementation("io.javalin:javalin-rendering:6.7.0")
+    implementation("io.javalin:javalin-bundle:6.7.0")
     implementation("gg.jte:jte:3.2.4")
 
 }
@@ -125,11 +125,7 @@ tasks.withType<JavaCompile> {
 }
 
 tasks.processResources {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-jte {
-    generate()
-    binaryStaticContent = true
-    kotlinCompileArgs = arrayOf("-jvm-target", "21")
+    from("src/main/resources") {
+        include("**/*.jte")
+    }
 }
