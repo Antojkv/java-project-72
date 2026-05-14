@@ -64,6 +64,7 @@ dependencies {
     implementation("io.javalin:javalin-rendering:6.7.0")
     implementation("io.javalin:javalin-bundle:6.7.0")
     implementation("gg.jte:jte:3.2.4")
+    implementation("org.jsoup:jsoup:1.18.3")
 
 }
 

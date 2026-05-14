@@ -13,6 +13,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="/">Анализатор страниц</a>
+            <a class="nav-link text-white" href="/urls">Сайты</a>
         </div>
     </nav>
     <main class="container mt-4">

@@ -2,6 +2,8 @@ package hexlet.code;
 
 import gg.jte.resolve.DirectoryCodeResolver;
 import hexlet.code.dto.MainPage;
+import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import hexlet.code.model.Url;
 import com.zaxxer.hikari.HikariConfig;
@@ -12,8 +14,13 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,8 +54,36 @@ public class App {
         }
     }
 
-    public static Javalin getApp() throws Exception {
-        // Настройка базы данных как у ментора
+    private static String normalizeUrl(String url) throws URISyntaxException {
+        URI uri = new URI(url);
+        String scheme = uri.getScheme() != null ? uri.getScheme() : "https";
+        String host = uri.getHost();
+        if (host == null) {
+            host = uri.getSchemeSpecificPart().split("/")[0];
+        }
+        int port = uri.getPort();
+        String normalized = scheme + "://" + host;
+        if (port != -1 && port != 80 && port != 443) {
+            normalized += ":" + port;
+        }
+        return normalized.toLowerCase();
+    }
+
+    private static boolean isValidUrl(String url) {
+        try {
+            URI uri = new URI(url);
+            String host = uri.getHost();
+            if (host == null) {
+                host = uri.getSchemeSpecificPart().split("/")[0];
+            }
+            return (uri.getScheme() != null && (uri.getScheme().equals("http") || uri.getScheme().equals("https")))
+                    && host != null && !host.isEmpty();
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    private static HikariDataSource setupDataSource() throws Exception {
         var hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(getDatabaseUrl());
         hikariConfig.setMaximumPoolSize(5);
@@ -63,22 +98,15 @@ public class App {
             }
         }
 
-        // Устанавливаем DataSource в репозиторий
         UrlRepository.setDataSource(dataSource);
+        UrlCheckRepository.setDataSource(dataSource);
 
-        // Настройка JTE
-        TemplateEngine templateEngine = createTemplateEngine();
+        return dataSource;
+    }
 
-        Javalin app = Javalin.create(config -> {
-            config.bundledPlugins.enableDevLogging();
-            config.fileRenderer(new JavalinJte(templateEngine));
-        });
+    private static void configureRoutes(Javalin app) {
+        app.before(ctx -> ctx.contentType("text/html; charset=utf-8"));
 
-        app.before(ctx -> {
-            ctx.contentType("text/html; charset=utf-8");
-        });
-
-        // Главная страница
         app.get("/", ctx -> {
             try {
                 String flash = ctx.sessionAttribute("flash");
@@ -88,30 +116,131 @@ public class App {
                 ctx.render("index.jte", Map.of("page", page));
             } catch (Exception e) {
                 LOG.error("Error rendering index page", e);
-                ctx.result("Error: " + e.getMessage() + "\n" + java.util.Arrays.toString(e.getStackTrace()));
+                ctx.result("Error: " + e.getMessage());
             }
         });
 
-        // Добавление URL
         app.post("/urls", ctx -> {
-            String name = ctx.formParam("url");
-            if (name == null || name.isBlank()) {
-                ctx.sessionAttribute("flash", "URL не может быть пустым");
+            String rawUrl = ctx.formParam("url");
+            if (rawUrl == null || rawUrl.isBlank()) {
+                ctx.sessionAttribute("flash", "Некорректный URL");
+                ctx.status(422);
                 ctx.redirect("/");
                 return;
             }
 
-            if (!name.startsWith("http")) {
-                name = "https://" + name;
+            if (!isValidUrl(rawUrl)) {
+                ctx.sessionAttribute("flash", "Некорректный URL");
+                ctx.status(422);
+                ctx.redirect("/");
+                return;
             }
 
-            Url url = new Url(name);
+            String normalizedUrl;
+            try {
+                normalizedUrl = normalizeUrl(rawUrl);
+            } catch (URISyntaxException e) {
+                ctx.sessionAttribute("flash", "Некорректный URL");
+                ctx.status(422);
+                ctx.redirect("/");
+                return;
+            }
+
+            var existingUrl = UrlRepository.findByName(normalizedUrl);
+            if (existingUrl.isPresent()) {
+                ctx.sessionAttribute("flash", "Страница уже существует");
+                ctx.redirect("/urls/" + existingUrl.get().getId());
+                return;
+            }
+
+            Url url = new Url(normalizedUrl);
             url.setCreatedAt(Timestamp.from(Instant.now()));
             UrlRepository.save(url);
 
             ctx.sessionAttribute("flash", "Страница успешно добавлена");
-            ctx.redirect("/");
+            ctx.redirect("/urls/" + url.getId());
         });
+
+        app.get("/urls", ctx -> {
+            var urls = UrlRepository.all();
+            String flash = ctx.sessionAttribute("flash");
+            ctx.sessionAttribute("flash", null);
+            MainPage page = new MainPage();
+            page.setFlash(flash);
+            ctx.render("urls/index.jte", Map.of("urls", urls, "page", page));
+        });
+
+        app.get("/urls/{id}", ctx -> {
+            Long id = Long.parseLong(ctx.pathParam("id"));
+            var url = UrlRepository.find(id);
+            if (url.isPresent()) {
+                String flash = ctx.sessionAttribute("flash");
+                ctx.sessionAttribute("flash", null);
+                MainPage page = new MainPage();
+                page.setFlash(flash);
+                var checks = UrlCheckRepository.findByUrlId(id);
+                ctx.render("urls/show.jte", Map.of("url", url.get(), "page", page, "checks", checks));
+            } else {
+                ctx.status(404).result("URL not found");
+            }
+        });
+
+        app.post("/urls/{id}/checks", ctx -> {
+            Long id = Long.parseLong(ctx.pathParam("id"));
+            var url = UrlRepository.find(id);
+
+            if (url.isEmpty()) {
+                ctx.status(404).result("URL not found");
+                return;
+            }
+
+            try {
+                HttpURLConnection connection = (HttpURLConnection)
+                        new java.net.URL(url.get().getName()).openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+
+                int responseCode = connection.getResponseCode();
+
+                String h1 = null;
+                String title = null;
+                String description = null;
+
+                if (responseCode == 200) {
+                    Document doc = Jsoup.parse(connection.getInputStream(), "UTF-8", url.get().getName());
+                    h1 = doc.select("h1").stream().findFirst().map(e -> e.text()).orElse(null);
+                    title = doc.select("title").stream().findFirst().map(e -> e.text()).orElse(null);
+                    description = doc.select("meta[name=description]").stream()
+                            .findFirst()
+                            .map(e -> e.attr("content"))
+                            .orElse(null);
+                }
+
+                UrlCheck check = new UrlCheck(id, responseCode, h1, title, description);
+                UrlCheckRepository.save(check);
+
+                ctx.sessionAttribute("flash", "Проверка выполнена. Код ответа: " + responseCode);
+
+            } catch (Exception e) {
+                ctx.sessionAttribute("flash", "Ошибка при проверке: " + e.getMessage());
+            }
+
+            ctx.redirect("/urls/" + id);
+        });
+    }
+
+    public static Javalin getApp() throws Exception {
+        setupDataSource();
+
+        TemplateEngine templateEngine = createTemplateEngine();
+
+        Javalin app = Javalin.create(config -> {
+            config.bundledPlugins.enableDevLogging();
+            config.fileRenderer(new JavalinJte(templateEngine));
+        });
+
+        configureRoutes(app);
 
         return app;
     }
@@ -122,6 +251,5 @@ public class App {
 
         Javalin app = getApp();
         app.start(port);
-        System.out.println("Application started on port " + port);
     }
 }
