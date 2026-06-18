@@ -81,6 +81,9 @@ public class App {
     }
 
     private static String normalizeUrl(String url) throws URISyntaxException {
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
         URI uri = new URI(url);
         String scheme = uri.getScheme() != null ? uri.getScheme() : "https";
         String host = uri.getHost();
@@ -185,9 +188,11 @@ public class App {
 
     private static String getNormalizedUrl(Context ctx, String rawUrl) {
         try {
-            return normalizeUrl(rawUrl);
+            String normalized = normalizeUrl(rawUrl);
+            System.out.println("Raw: " + rawUrl + " -> Normalized: " + normalized); // Отладка
+            return normalized;
         } catch (URISyntaxException e) {
-            handleInvalidUrl(ctx, FLASH_ERROR_URL);
+            handleInvalidUrl(ctx, "Некорректный URL");
             return null;
         }
     }

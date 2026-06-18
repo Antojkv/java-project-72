@@ -2,7 +2,6 @@ package hexlet.code.repository;
 
 import hexlet.code.model.Url;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,6 +14,8 @@ import java.util.Optional;
 
 public class UrlRepository {
     private static HikariDataSource dataSource;
+
+    private static final String COLUMN_CREATED_AT = "created_at";
 
     public static void setDataSource(HikariDataSource ds) {
         dataSource = ds;
@@ -47,7 +48,7 @@ public class UrlRepository {
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 String name = rs.getString("name");
-                Timestamp createdAt = rs.getTimestamp("created_at");
+                Timestamp createdAt = rs.getTimestamp(COLUMN_CREATED_AT);
                 Url url = new Url(name);
                 url.setId(id);
                 url.setCreatedAt(createdAt);
@@ -65,7 +66,7 @@ public class UrlRepository {
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 Long id = rs.getLong("id");
-                Timestamp createdAt = rs.getTimestamp("created_at");
+                Timestamp createdAt = rs.getTimestamp(COLUMN_CREATED_AT);
                 Url url = new Url(name);
                 url.setId(id);
                 url.setCreatedAt(createdAt);
@@ -84,7 +85,7 @@ public class UrlRepository {
             while (rs.next()) {
                 Long id = rs.getLong("id");
                 String name = rs.getString("name");
-                Timestamp createdAt = rs.getTimestamp("created_at");
+                Timestamp createdAt = rs.getTimestamp(COLUMN_CREATED_AT);
                 Url url = new Url(name);
                 url.setId(id);
                 url.setCreatedAt(createdAt);

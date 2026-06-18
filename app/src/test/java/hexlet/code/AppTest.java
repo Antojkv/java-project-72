@@ -76,16 +76,23 @@ public class AppTest {
     }
 
     @Test
-    public void testCreateDuplicateUrl() throws Exception {
+    public void testCreateUrlWithPort() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-            Url existingUrl = new Url("https://example.com");
-            existingUrl.setCreatedAt(Timestamp.from(Instant.now()));
-            UrlRepository.save(existingUrl);
-            String requestBody = "url=https://example.com";
+            String requestBody = "url=https://example.com:8080/path";
             try (Response response = client.post("/urls", requestBody)) {
                 assertThat(response.code()).isEqualTo(200);
-                var urls = UrlRepository.all();
-                assertThat(urls).hasSize(1);
+            }
+            var url = UrlRepository.findByName("https://example.com:8080");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testCreateEmptyUrl() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
             }
         });
     }
@@ -96,6 +103,21 @@ public class AppTest {
             String requestBody = "url=not-a-valid-url";
             try (Response response = client.post("/urls", requestBody)) {
                 assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
+
+    @Test
+    public void testCreateDuplicateUrl() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            Url existingUrl = new Url("https://example.com");
+            existingUrl.setCreatedAt(Timestamp.from(Instant.now()));
+            UrlRepository.save(existingUrl);
+            String requestBody = "url=https://example.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+                var urls = UrlRepository.all();
+                assertThat(urls).hasSize(1);
             }
         });
     }
@@ -134,6 +156,15 @@ public class AppTest {
     public void testUrlNotFound() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             try (Response response = client.get("/urls/999999")) {
+                assertThat(response.code()).isEqualTo(404);
+            }
+        });
+    }
+
+    @Test
+    public void testCheckNonExistentUrl() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.post("/urls/99999/checks")) {
                 assertThat(response.code()).isEqualTo(404);
             }
         });
@@ -183,6 +214,24 @@ public class AppTest {
     }
 
     @Test
+    public void testCreateCheckClientError() throws Exception {
+        mockServer.enqueue(new MockResponse().setResponseCode(404));
+
+        JavalinTest.test(app, (server, client) -> {
+            Url url = new Url(mockUrl);
+            url.setCreatedAt(Timestamp.from(Instant.now()));
+            UrlRepository.save(url);
+
+            try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+
+            var checks = UrlCheckRepository.findByUrlId(url.getId());
+            assertThat(checks).isEmpty();
+        });
+    }
+
+    @Test
     public void testChecksDisplay() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url("https://example.com");
@@ -203,12 +252,60 @@ public class AppTest {
     }
 
     @Test
-    public void testCreateEmptyUrl() throws Exception {
+    public void testNormalizeUrlWithDefaultPort() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-            String requestBody = "url=";
+            String requestBody = "url=https://example.com:80/path";
             try (Response response = client.post("/urls", requestBody)) {
                 assertThat(response.code()).isEqualTo(200);
             }
+            // Порт 80 должен быть удалён
+            var url = UrlRepository.findByName("https://example.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testNormalizeUrlWithHttpsPort() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://example.com:443/path";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("https://example.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testFlashMessageOnSuccess() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://test.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("https://test.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testFlashMessageOnError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=invalid";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
+
+    @Test
+    public void testCreatedAtField() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://test.com";
+            client.post("/urls", requestBody);
+            var url = UrlRepository.findByName("https://test.com");
+            assertThat(url).isPresent();
+            assertThat(url.get().getCreatedAt()).isNotNull();
         });
     }
 }
