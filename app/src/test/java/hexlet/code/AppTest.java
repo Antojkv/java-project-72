@@ -201,4 +201,14 @@ public class AppTest {
             }
         });
     }
+
+    @Test
+    public void testCreateEmptyUrl() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
 }
