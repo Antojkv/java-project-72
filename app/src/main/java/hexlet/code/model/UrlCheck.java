@@ -37,6 +37,6 @@ public class UrlCheck {
         if (str.length() <= 200) {
             return str;
         }
-        return str.substring(0, 197) + "...";
+        return str.substring(0, Math.min(197, str.length())) + "...";
     }
 }
