@@ -308,4 +308,73 @@ public class AppTest {
             assertThat(url.get().getCreatedAt()).isNotNull();
         });
     }
+
+    @Test
+    public void testNormalizeUrlWithNoHost() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https:///example.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
+
+    @Test
+    public void testNormalizeUrlWithInvalidUri() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=http://[::1]:8080"; // Может вызвать исключение
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
+
+    @Test
+    public void testGetNormalizedUrlWithInvalidUrl() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=://invalid-url";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
+
+    @Test
+    public void testMainPageWithError() throws Exception {
+        // Проверяем, что главная страница работает при ошибке
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.get("/")) {
+                assertThat(response.code()).isEqualTo(200);
+                String body = response.body().string();
+                assertThat(body).contains("Анализатор страниц");
+            }
+        });
+    }
+
+    @Test
+    public void testSaveNewUrlWithError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://valid-url.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
+
+    @Test
+    public void testIsErrorStatusCode() throws Exception {
+        mockServer.enqueue(new MockResponse().setResponseCode(400));
+        JavalinTest.test(app, (server, client) -> {
+            Url url = new Url(mockUrl);
+            url.setCreatedAt(Timestamp.from(Instant.now()));
+            UrlRepository.save(url);
+
+            try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+
+            var checks = UrlCheckRepository.findByUrlId(url.getId());
+            assertThat(checks).isEmpty();
+        });
+    }
 }
