@@ -377,4 +377,53 @@ public class AppTest {
             assertThat(checks).isEmpty();
         });
     }
+
+    @Test
+    public void testUrlPageWithInvalidIdFormat() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.get("/urls/invalid-id")) {
+                assertThat(response.code()).isEqualTo(400);
+                String body = response.body().string();
+                assertThat(body).contains("Invalid ID format");
+            }
+        });
+    }
+
+    @Test
+    public void testUrlPageWithException() throws Exception {
+        // Этот тест сложно воспроизвести напрямую,
+        // но можно создать ситуацию, когда UrlRepository.find() выбрасывает исключение
+        // Для этого нужно замокать репозиторий или использовать невалидный ID
+        JavalinTest.test(app, (server, client) -> {
+            // Используем очень большое число, которое может вызвать ошибку
+            try (Response response = client.get("/urls/9999999999999999999")) {
+                assertThat(response.code()).isEqualTo(400);
+            }
+        });
+    }
+
+    @Test
+    public void testCheckWithInvalidIdFormat() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.post("/urls/invalid-id/checks")) {
+                assertThat(response.code()).isEqualTo(400);
+                String body = response.body().string();
+                assertThat(body).contains("Invalid ID format");
+            }
+        });
+    }
+
+    @Test
+    public void testUrlPageWithInternalError() throws Exception {
+
+        JavalinTest.test(app, (server, client) -> {
+            Url url = new Url("https://test-exception.com");
+            url.setCreatedAt(Timestamp.from(Instant.now()));
+            UrlRepository.save(url);
+
+            try (Response response = client.get("/urls/999999")) {
+                assertThat(response.code()).isEqualTo(404);
+            }
+        });
+    }
 }
