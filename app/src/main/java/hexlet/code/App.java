@@ -18,7 +18,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +27,10 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
+import kong.unirest.Unirest;
+import kong.unirest.HttpResponse;
+
+
 
 public class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
@@ -188,42 +191,39 @@ public class App {
         app.post("/urls/{id}/checks", ctx -> {
             Long id = Long.parseLong(ctx.pathParam("id"));
             var url = UrlRepository.find(id);
-
             if (url.isEmpty()) {
                 ctx.status(404).result("URL not found");
                 return;
             }
 
             try {
-                HttpURLConnection connection = (HttpURLConnection)
-                        new java.net.URL(url.get().getName()).openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
+                HttpResponse<String> response = Unirest.get(url.get().getName())
+                        .connectTimeout(5000)
+                        .socketTimeout(5000)
+                        .asString();
 
-                int responseCode = connection.getResponseCode();
-
-                String h1 = null;
-                String title = null;
-                String description = null;
-
-                if (responseCode == 200) {
-                    Document doc = Jsoup.parse(connection.getInputStream(), "UTF-8", url.get().getName());
-                    h1 = doc.select("h1").stream().findFirst().map(e -> e.text()).orElse(null);
-                    title = doc.select("title").stream().findFirst().map(e -> e.text()).orElse(null);
-                    description = doc.select("meta[name=description]").stream()
-                            .findFirst()
-                            .map(e -> e.attr("content"))
-                            .orElse(null);
+                int statusCode = response.getStatus();
+                if (statusCode >= 400 && statusCode <= 599) {
+                    ctx.sessionAttribute("flash", "Произошла ошибка при проверке");
+                    ctx.redirect("/urls/" + id);
+                    return;
                 }
 
-                UrlCheck check = new UrlCheck(id, responseCode, h1, title, description);
+                Document doc = Jsoup.parse(response.getBody(), url.get().getName());
+
+                String title = doc.title(); // метод из документации Jsoup
+                String h1 = doc.selectFirst("h1") != null ? doc.selectFirst("h1").text() : null;
+                String description = doc.selectFirst("meta[name=description]") != null
+                        ? doc.selectFirst("meta[name=description]").attr("content")
+                        : null;
+
+                UrlCheck check = new UrlCheck(id, statusCode, h1, title, description);
                 UrlCheckRepository.save(check);
 
-                ctx.sessionAttribute("flash", "Проверка выполнена. Код ответа: " + responseCode);
+                ctx.sessionAttribute("flash", "Страница успешно проверена");
 
             } catch (Exception e) {
-                ctx.sessionAttribute("flash", "Ошибка при проверке: " + e.getMessage());
+                ctx.sessionAttribute("flash", "Произошла ошибка при проверке");
             }
 
             ctx.redirect("/urls/" + id);

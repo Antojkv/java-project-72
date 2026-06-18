@@ -57,4 +57,25 @@ public class UrlCheckRepository {
         }
         return checks;
     }
+
+    public static UrlCheck findLastByUrlId(Long urlId) throws SQLException {
+        String sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY id DESC LIMIT 1";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, urlId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new UrlCheck(
+                        rs.getLong("id"),
+                        rs.getLong("url_id"),
+                        rs.getInt("status_code"),
+                        rs.getString("h1"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        rs.getTimestamp("created_at")
+                );
+            }
+        }
+        return null;
+    }
 }

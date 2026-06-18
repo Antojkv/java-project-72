@@ -57,6 +57,8 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.17")
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
+    testCompileOnly("org.projectlombok:lombok:1.18.34")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.34")
     implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("com.h2database:h2:2.3.232")
     implementation("org.postgresql:postgresql:42.7.3")
@@ -65,6 +67,9 @@ dependencies {
     implementation("io.javalin:javalin-bundle:6.7.0")
     implementation("gg.jte:jte:3.2.4")
     implementation("org.jsoup:jsoup:1.18.3")
+    implementation("com.konghq:unirest-java:3.14.5")
+    implementation("org.jsoup:jsoup:1.18.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
 }
 

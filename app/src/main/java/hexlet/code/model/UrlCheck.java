@@ -24,9 +24,19 @@ public class UrlCheck {
     public UrlCheck(Long urlId, Integer statusCode, String h1, String title, String description) {
         this.urlId = urlId;
         this.statusCode = statusCode;
-        this.h1 = h1;
-        this.title = title;
-        this.description = description;
+        this.h1 = truncate(h1);
+        this.title = truncate(title);
+        this.description = truncate(description);
         this.createdAt = new Timestamp(System.currentTimeMillis());
+    }
+
+    private String truncate(String str) {
+        if (str == null) {
+            return null;
+        }
+        if (str.length() <= 200) {
+            return str;
+        }
+        return str.substring(0, 197) + "...";
     }
 }

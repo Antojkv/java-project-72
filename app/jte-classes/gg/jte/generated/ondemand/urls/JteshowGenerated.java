@@ -35,7 +35,7 @@ public final class JteshowGenerated {
 				jteOutput.setContext("form", "action");
 				jteOutput.writeUserContent(url.getId());
 				jteOutput.setContext("form", null);
-				jteOutput.writeContent("/checks\" method=\"post\" class=\"mb-3\">\n            <button type=\"submit\" class=\"btn btn-primary\">Запустить проверку</button>\n        </form>\n\n        <table class=\"table table-bordered\">\n            <thead>\n                <tr>\n                    <th>ID</th>\n                    <th>Код ответа</th>\n                    <th>h1</th>\n                    <th>title</th>\n                    <th>description</th>\n                    <th>Дата создания</th>\n                </tr>\n            </thead>\n            <tbody>\n                ");
+				jteOutput.writeContent("/checks\" method=\"post\" class=\"mb-3\">\n            <button type=\"submit\" class=\"btn btn-primary\">Запустить проверку</button>\n        </form>\n\n        <table class=\"table table-bordered\" data-test=\"checks\">\n            <thead>\n                <tr>\n                    <th>ID</th>\n                    <th>Код ответа</th>\n                    <th>h1</th>\n                    <th>title</th>\n                    <th>description</th>\n                    <th>Дата создания</th>\n                </tr>\n            </thead>\n            <tbody>\n                ");
 				for (var check : checks) {
 					jteOutput.writeContent("\n                    <tr>\n                        <td>");
 					jteOutput.setContext("td", null);
