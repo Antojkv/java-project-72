@@ -258,7 +258,6 @@ public class AppTest {
             try (Response response = client.post("/urls", requestBody)) {
                 assertThat(response.code()).isEqualTo(200);
             }
-            // Порт 80 должен быть удалён
             var url = UrlRepository.findByName("https://example.com");
             assertThat(url).isPresent();
         });
@@ -341,7 +340,6 @@ public class AppTest {
 
     @Test
     public void testMainPageWithError() throws Exception {
-        // Проверяем, что главная страница работает при ошибке
         JavalinTest.test(app, (server, client) -> {
             try (Response response = client.get("/")) {
                 assertThat(response.code()).isEqualTo(200);
@@ -391,11 +389,7 @@ public class AppTest {
 
     @Test
     public void testUrlPageWithException() throws Exception {
-        // Этот тест сложно воспроизвести напрямую,
-        // но можно создать ситуацию, когда UrlRepository.find() выбрасывает исключение
-        // Для этого нужно замокать репозиторий или использовать невалидный ID
         JavalinTest.test(app, (server, client) -> {
-            // Используем очень большое число, которое может вызвать ошибку
             try (Response response = client.get("/urls/9999999999999999999")) {
                 assertThat(response.code()).isEqualTo(400);
             }
@@ -423,6 +417,25 @@ public class AppTest {
 
             try (Response response = client.get("/urls/999999")) {
                 assertThat(response.code()).isEqualTo(404);
+            }
+        });
+    }
+
+    @Test
+    public void testUrlPageWithInternalServerError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+
+            try (Response response = client.get("/urls/not-a-number")) {
+                assertThat(response.code()).isEqualTo(400);
+            }
+        });
+    }
+
+    @Test
+    public void testCheckWithInternalServerError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.post("/urls/not-a-number/checks")) {
+                assertThat(response.code()).isEqualTo(400);
             }
         });
     }
