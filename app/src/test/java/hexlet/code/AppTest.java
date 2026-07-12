@@ -486,4 +486,25 @@ public class AppTest {
             assertThat(url).isPresent();
         });
     }
+
+    @Test
+    public void testNormalizeUrlWithHostNull() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://example.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("https://example.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testMainPageWithRenderError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.get("/")) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+        });
+    }
 }
