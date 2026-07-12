@@ -439,4 +439,51 @@ public class AppTest {
             }
         });
     }
+    @Test
+    public void testNormalizeUrlWithPort80() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://example.com:80/path";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("https://example.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testNormalizeUrlWithPort443() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://example.com:443/path";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("https://example.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testIsValidUrlWithHttp() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=http://example.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("http://example.com");
+            assertThat(url).isPresent();
+        });
+    }
+
+    @Test
+    public void testIsValidUrlWithHttps() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String requestBody = "url=https://example.com";
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+            var url = UrlRepository.findByName("https://example.com");
+            assertThat(url).isPresent();
+        });
+    }
 }
