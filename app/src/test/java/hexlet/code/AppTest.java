@@ -15,16 +15,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class AppTest {
     private static final CharSequence FLASH_DUPLICATE_URL = "Страница уже существует";
     private static MockWebServer mockServer;
     private static String mockUrl;
     private Javalin app;
+
 
     @BeforeAll
     public static void setUpMock() throws IOException {
@@ -548,5 +555,106 @@ public class AppTest {
         assertThat(method.invoke(null, "://invalid")).isEqualTo(false);
         // URL без протокола — невалидный
         assertThat(method.invoke(null, "example.com")).isEqualTo(false);
+    }
+
+    @Test
+    public void testIsValidUrlWithFtp() throws Exception {
+        var method = App.class.getDeclaredMethod("isValidUrl", String.class);
+        method.setAccessible(true);
+
+        assertThat(method.invoke(null, "ftp://example.com")).isEqualTo(false);
+        assertThat(method.invoke(null, "mailto:test@example.com")).isEqualTo(false);
+    }
+
+    @Test
+    public void testGetPortWithDefault() throws Exception {
+        var method = App.class.getDeclaredMethod("getPort", Map.class);
+        method.setAccessible(true);
+
+        // Проверяем, что возвращается порт по умолчанию
+        Map<String, String> env = Map.of();
+        Object result = method.invoke(null, env);
+        assertThat(result).isEqualTo(7070);
+    }
+
+    @Test
+    public void testGetPortWithCustomPort() throws Exception {
+        var method = App.class.getDeclaredMethod("getPort", Map.class);
+        method.setAccessible(true);
+
+        Map<String, String> env = Map.of("PORT", "8080");
+        Object result = method.invoke(null, env);
+        assertThat(result).isEqualTo(8080);
+    }
+
+    @Test
+    public void testGetPortWithInvalidPort() throws Exception {
+        var method = App.class.getDeclaredMethod("getPort", Map.class);
+        method.setAccessible(true);
+
+        Map<String, String> env = Map.of("PORT", "invalid");
+        Object result = method.invoke(null, env);
+        assertThat(result).isEqualTo(7070);
+    }
+
+    @Test
+    public void testEmptyPortReturnsDefault() throws Exception {
+        var method = App.class.getDeclaredMethod("getPort", Map.class);
+        method.setAccessible(true);
+
+        Map<String, String> env = Map.of("PORT", "");
+        Object result = method.invoke(null, env);
+        assertThat(result).isEqualTo(7070);
+    }
+
+    @Test
+    void testNormalizeUrlWithPort80() throws URISyntaxException {
+        assertEquals("http://example.com", App.normalizeUrl("http://example.com:80"));
+    }
+
+    @Test
+    void testNormalizeUrlWithPort443() throws URISyntaxException {
+        assertEquals("https://example.com", App.normalizeUrl("https://example.com:443"));
+    }
+
+    @Test
+    void testNormalizeUrlWithCustomPort() throws URISyntaxException {
+        assertEquals("http://example.com:8080", App.normalizeUrl("http://example.com:8080/path"));
+    }
+
+    @Test
+    void testIsValidUrlReturnsFalseForInvalidUri() {
+        assertFalse(App.isValidUrl("not-a-valid-uri"));
+    }
+
+    @Test
+    void testIsValidUrlReturnsFalseWhenHostIsNull() throws URISyntaxException {
+        // Даже если URI валиден, но хоста нет — считаем невалидным
+        assertFalse(App.isValidUrl("https://"));
+    }
+
+    @Test
+    public void testMainPageWithRenderError() throws Exception {
+        // Временно переименовываем шаблон, чтобы вызвать ошибку рендеринга
+        var templatePath = Paths.get("src/main/jte/index.jte");
+        var backupPath = Paths.get("src/main/jte/index.jte.backup");
+
+        try {
+            // Переименовываем шаблон
+            Files.move(templatePath, backupPath);
+
+            // Вызываем главную страницу
+            JavalinTest.test(app, (server, client) -> {
+                try (Response response = client.get("/")) {
+                    // Должен быть 200, но с текстом ошибки
+                    assertThat(response.code()).isEqualTo(200);
+                    String body = response.body().string();
+                    assertThat(body).contains("Error");
+                }
+            });
+        } finally {
+            // Возвращаем шаблон обратно
+            Files.move(backupPath, templatePath);
+        }
     }
 }

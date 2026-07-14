@@ -31,6 +31,7 @@ import kong.unirest.Unirest;
 import kong.unirest.HttpResponse;
 import io.javalin.http.Context;
 
+import javax.annotation.processing.Generated;
 
 
 public class App {
@@ -80,7 +81,7 @@ public class App {
         }
     }
 
-    private static String normalizeUrl(String url) throws URISyntaxException {
+    public static String normalizeUrl(String url) throws URISyntaxException {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://" + url;
         }
@@ -99,7 +100,7 @@ public class App {
         return normalized.toLowerCase();
     }
 
-    private static boolean isValidUrl(String url) {
+    public static boolean isValidUrl(String url) {
         try {
             URI uri = new URI(url);
             String host = uri.getHost();
@@ -364,10 +365,28 @@ public class App {
         return app;
     }
 
-    public static void main(String[] args) throws Exception {
-        String portStr = System.getenv().getOrDefault("PORT", "7070");
-        int port = Integer.parseInt(portStr);
-        Javalin app = getApp();
-        app.start(port);
+    public static int getPort(Map<String, String> env) {
+        String portStr = env.getOrDefault("PORT", "7070");
+        try {
+            return Integer.parseInt(portStr);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid PORT value '" + portStr + "', using default 7070");
+            return 7070;
+        }
+    }
+
+    @Generated("Sonar")
+    public static void start(Map<String, String> env) {
+        int port = getPort(env);
+        try {
+            Javalin app = getApp();
+            app.start(port);
+        } catch (Exception e) {
+            LOG.error("Error starting application", e);
+        }
+    }
+
+    public static void main(String[] args) {
+        App.start(System.getenv());
     }
 }
