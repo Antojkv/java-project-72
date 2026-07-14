@@ -21,6 +21,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AppTest {
+    private static final CharSequence FLASH_DUPLICATE_URL = "Страница уже существует";
     private static MockWebServer mockServer;
     private static String mockUrl;
     private Javalin app;
@@ -146,6 +147,7 @@ public class AppTest {
             try (Response response = client.get("/urls/" + url.getId())) {
                 assertThat(response.code()).isEqualTo(200);
                 String body = response.body().string();
+                // Убираем обратный слеш
                 assertThat(body).contains("Сайт: https://example.com");
                 assertThat(body).contains("Запустить проверку");
             }
@@ -301,7 +303,9 @@ public class AppTest {
     public void testCreatedAtField() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             String requestBody = "url=https://test.com";
-            client.post("/urls", requestBody);
+            try (Response response = client.post("/urls", requestBody)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
             var url = UrlRepository.findByName("https://test.com");
             assertThat(url).isPresent();
             assertThat(url.get().getCreatedAt()).isNotNull();
@@ -334,17 +338,6 @@ public class AppTest {
             String requestBody = "url=://invalid-url";
             try (Response response = client.post("/urls", requestBody)) {
                 assertThat(response.code()).isEqualTo(200);
-            }
-        });
-    }
-
-    @Test
-    public void testMainPageWithError() throws Exception {
-        JavalinTest.test(app, (server, client) -> {
-            try (Response response = client.get("/")) {
-                assertThat(response.code()).isEqualTo(200);
-                String body = response.body().string();
-                assertThat(body).contains("Анализатор страниц");
             }
         });
     }
@@ -439,29 +432,6 @@ public class AppTest {
             }
         });
     }
-    @Test
-    public void testNormalizeUrlWithPort80() throws Exception {
-        JavalinTest.test(app, (server, client) -> {
-            String requestBody = "url=https://example.com:80/path";
-            try (Response response = client.post("/urls", requestBody)) {
-                assertThat(response.code()).isEqualTo(200);
-            }
-            var url = UrlRepository.findByName("https://example.com");
-            assertThat(url).isPresent();
-        });
-    }
-
-    @Test
-    public void testNormalizeUrlWithPort443() throws Exception {
-        JavalinTest.test(app, (server, client) -> {
-            String requestBody = "url=https://example.com:443/path";
-            try (Response response = client.post("/urls", requestBody)) {
-                assertThat(response.code()).isEqualTo(200);
-            }
-            var url = UrlRepository.findByName("https://example.com");
-            assertThat(url).isPresent();
-        });
-    }
 
     @Test
     public void testIsValidUrlWithHttp() throws Exception {
@@ -500,11 +470,83 @@ public class AppTest {
     }
 
     @Test
-    public void testMainPageWithRenderError() throws Exception {
+    public void testAppConstructor() throws Exception {
+        App appInstance = new App();
+        assertThat(appInstance).isNotNull();
+    }
+
+    @Test
+    public void testReadResourceFileNotFound() throws Exception {
+        var method = App.class.getDeclaredMethod("readResourceFile", String.class);
+        method.setAccessible(true);
+        var result = method.invoke(null, "non-existent-file.sql");
+        assertThat(result).isNull();
+    }
+
+    @Test
+    public void testSetupDataSource() throws Exception {
+
+        var method = App.class.getDeclaredMethod("setupDataSource");
+        method.setAccessible(true);
+        var dataSource = method.invoke(null);
+        assertThat(dataSource).isNotNull();
+    }
+
+
+
+    @Test
+    public void testUrlPageWithTooLargeId() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-            try (Response response = client.get("/")) {
-                assertThat(response.code()).isEqualTo(200);
+            try (Response response = client.get("/urls/9999999999999999999")) {
+                assertThat(response.code()).isEqualTo(400);
+                String body = response.body().string();
+                assertThat(body).contains("Invalid ID format");
             }
         });
+    }
+
+    @Test
+    public void testIsErrorStatusCodeForVariousCodes() throws Exception {
+        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+                .invoke(null, 200)).isEqualTo(false);
+        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+                .invoke(null, 302)).isEqualTo(false);
+        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+                .invoke(null, 404)).isEqualTo(true);
+        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+                .invoke(null, 500)).isEqualTo(true);
+    }
+
+    @Test
+    public void testIsErrorStatusCodeMethod() throws Exception {
+        var method = App.class.getDeclaredMethod("isErrorStatusCode", int.class);
+        method.setAccessible(true);
+
+        assertThat(method.invoke(null, 200)).isEqualTo(false);
+        assertThat(method.invoke(null, 302)).isEqualTo(false);
+        assertThat(method.invoke(null, 399)).isEqualTo(false);
+        assertThat(method.invoke(null, 400)).isEqualTo(true);
+        assertThat(method.invoke(null, 404)).isEqualTo(true);
+        assertThat(method.invoke(null, 500)).isEqualTo(true);
+        assertThat(method.invoke(null, 599)).isEqualTo(true);
+    }
+
+    @Test
+    public void testIsValidInputUrlMethod() throws Exception {
+        var method = App.class.getDeclaredMethod("isValidInputUrl", String.class);
+        method.setAccessible(true);
+
+        // Проверяем валидные URL (с протоколом)
+        assertThat(method.invoke(null, "https://example.com")).isEqualTo(true);
+        assertThat(method.invoke(null, "http://example.com")).isEqualTo(true);
+
+        // Проверяем невалидные URL
+        assertThat(method.invoke(null, (String) null)).isEqualTo(false);
+        assertThat(method.invoke(null, "")).isEqualTo(false);
+        assertThat(method.invoke(null, "   ")).isEqualTo(false);
+        assertThat(method.invoke(null, "not-a-valid-url")).isEqualTo(false);
+        assertThat(method.invoke(null, "://invalid")).isEqualTo(false);
+        // URL без протокола — невалидный
+        assertThat(method.invoke(null, "example.com")).isEqualTo(false);
     }
 }

@@ -13,13 +13,13 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @ToString
 public class UrlCheck {
-    private Long id;
-    private Long urlId;
-    private Integer statusCode;
-    private String h1;
-    private String title;
-    private String description;
-    private Timestamp createdAt;
+    public Long id;
+    public Long urlId;
+    public Integer statusCode;
+    public String h1;
+    public String title;
+    public String description;
+    public Timestamp createdAt;
 
     public UrlCheck(Long urlId, Integer statusCode, String h1, String title, String description) {
         this.urlId = urlId;

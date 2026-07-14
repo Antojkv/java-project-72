@@ -7,7 +7,7 @@ import java.util.List;
 @javax.annotation.processing.Generated("gg.jte.TemplateEngine")
 public final class JteshowGenerated {
 	public static final String JTE_NAME = "urls/show.jte";
-	public static final int[] JTE_LINE_INFO = {0,0,1,2,3,4,4,4,4,4,8,8,10,10,11,11,13,13,13,16,16,18,18,18,24,24,24,28,28,28,32,32,32,38,38,38,38,54,54,56,56,56,57,57,57,58,58,58,59,59,59,60,60,60,61,61,61,63,63,66,66,66,66,66,4,5,6,6,6,6};
+	public static final int[] JTE_LINE_INFO = {0,0,1,2,3,4,4,4,4,4,8,8,10,10,11,11,13,13,13,16,16,18,18,18,24,24,24,28,28,28,32,32,32,38,38,38,38,54,54,56,56,56,57,57,57,58,58,58,59,59,59,60,60,60,61,61,61,63,63,66,66,66,67,67,67,4,5,6,6,6,6};
 	public static void render(gg.jte.html.HtmlTemplateOutput jteOutput, gg.jte.html.HtmlInterceptor jteHtmlInterceptor, Url url, MainPage page, List<UrlCheck> checks) {
 		jteOutput.writeContent("\n");
 		gg.jte.generated.ondemand.layout.JtepageGenerated.render(jteOutput, jteHtmlInterceptor, new gg.jte.html.HtmlContent() {
@@ -60,6 +60,7 @@ public final class JteshowGenerated {
 				jteOutput.writeContent("\n            </tbody>\n        </table>\n    ");
 			}
 		});
+		jteOutput.writeContent("\n");
 	}
 	public static void renderMap(gg.jte.html.HtmlTemplateOutput jteOutput, gg.jte.html.HtmlInterceptor jteHtmlInterceptor, java.util.Map<String, Object> params) {
 		Url url = (Url)params.get("url");

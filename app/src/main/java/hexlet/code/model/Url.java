@@ -13,9 +13,9 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @ToString
 public class Url {
-    private Long id;
-    private String name;
-    private Timestamp createdAt;
+    public Long id;
+    public String name;
+    public Timestamp createdAt;
 
     public Url(String name) {
         this.name = name;

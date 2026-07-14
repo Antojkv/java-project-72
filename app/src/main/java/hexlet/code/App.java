@@ -37,7 +37,7 @@ public class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
 
     private static final String FLASH_ERROR_URL = "Некорректный URL";
-    private static final String FLASH_DUPLICATE_URL = "Страница уже существует";
+    public static final String FLASH_DUPLICATE_URL = "Страница уже существует";
     private static final String FLASH_SUCCESS_ADD = "Страница успешно добавлена";
     private static final String FLASH_SUCCESS_CHECK = "Страница успешно проверена";
     private static final String FLASH_ERROR_CHECK = "Произошла ошибка при проверке";
@@ -149,6 +149,7 @@ public class App {
             try {
                 String flash = ctx.sessionAttribute(PARAM_FLASH);
                 ctx.sessionAttribute(PARAM_FLASH, null);
+
                 MainPage page = new MainPage();
                 page.setFlash(flash);
                 ctx.render(PATH_INDEX, Map.of(PARAM_PAGE, page));
@@ -173,11 +174,10 @@ public class App {
                 return;
             }
 
-            var existingUrl = findExistingUrl(ctx, normalizedUrl);
+            Url existingUrl = findExistingUrl(ctx, normalizedUrl);
             if (existingUrl != null) {
                 return;
             }
-
             saveNewUrl(ctx, normalizedUrl);
         });
     }
@@ -189,7 +189,6 @@ public class App {
     private static String getNormalizedUrl(Context ctx, String rawUrl) {
         try {
             String normalized = normalizeUrl(rawUrl);
-            System.out.println("Raw: " + rawUrl + " -> Normalized: " + normalized); // Отладка
             return normalized;
         } catch (URISyntaxException e) {
             handleInvalidUrl(ctx, "Некорректный URL");
@@ -199,11 +198,12 @@ public class App {
 
     private static Url findExistingUrl(Context ctx, String normalizedUrl) {
         try {
-            var existingUrl = UrlRepository.findByName(normalizedUrl);
-            if (existingUrl.isPresent()) {
+            var existingUrlOpt = UrlRepository.findByName(normalizedUrl);
+            if (existingUrlOpt.isPresent()) {
+                Url existingUrl = existingUrlOpt.get();
                 ctx.sessionAttribute(PARAM_FLASH, FLASH_DUPLICATE_URL);
-                ctx.redirect(PATH_URLS + "/" + existingUrl.get().getId());
-                return existingUrl.get();
+                ctx.redirect(PATH_URLS + "/" + existingUrl.getId());
+                return existingUrl;
             }
             return null;
         } catch (Exception e) {
@@ -318,7 +318,7 @@ public class App {
         }
     }
 
-    private static boolean isErrorStatusCode(int statusCode) {
+    static boolean isErrorStatusCode(int statusCode) {
         return statusCode >= 400 && statusCode <= 599;
     }
 
