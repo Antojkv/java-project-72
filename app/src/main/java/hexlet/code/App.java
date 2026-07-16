@@ -31,9 +31,6 @@ import kong.unirest.Unirest;
 import kong.unirest.HttpResponse;
 import io.javalin.http.Context;
 
-import javax.annotation.processing.Generated;
-
-
 public class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
 
@@ -375,7 +372,6 @@ public class App {
         }
     }
 
-    @Generated("Sonar")
     public static void start(Map<String, String> env) {
         int port = getPort(env);
         try {

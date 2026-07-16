@@ -247,7 +247,7 @@ public class AppTest {
             url.setCreatedAt(Timestamp.from(Instant.now()));
             UrlRepository.save(url);
             UrlCheck check = new UrlCheck(
-                url.getId(), 200, "Example Domain", "Example Domain", null
+                    url.getId(), 200, "Example Domain", "Example Domain", null
             );
             check.setCreatedAt(Timestamp.from(Instant.now()));
             UrlCheckRepository.save(check);
