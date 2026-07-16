@@ -657,4 +657,38 @@ public class AppTest {
             Files.move(backupPath, templatePath);
         }
     }
+
+    @Test
+    public void testAppStartWithCustomPort() throws Exception {
+        // Используем порт 0, чтобы ОС сама выделила безопасный свободный порт
+        Map<String, String> env = Map.of("PORT", "0");
+
+        // Нам не нужно запускать отдельный поток, так как Javalin.start() не блокирует выполнение.
+        // Запускаем напрямую и проверяем, что метод выполняется без исключений.
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
+            App.start(env);
+        });
+
+        // На всякий случай гасим Javalin, чтобы освободить порт 0 (если он не закрылся автоматически)
+        try {
+            App.getApp().stop();
+        } catch (Exception e) {
+            // Игнорируем, если сервер уже остановлен
+        }
+    }
+
+    @Test
+    public void testMainMethodWithMockedEnv() {
+        // Проверяем, что вызов main() проходит без падения всего приложения
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
+            App.main(new String[]{});
+        });
+
+        // Гасим дефолтный инстанс Javalin
+        try {
+            App.getApp().stop();
+        } catch (Exception e) {
+            // Игнорируем
+        }
+    }
 }
