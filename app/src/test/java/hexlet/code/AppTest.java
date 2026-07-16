@@ -691,4 +691,32 @@ public class AppTest {
             // Игнорируем
         }
     }
+
+    @Test
+    public void testCreateCheckWithNetworkError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            // Используем невалидный адрес, чтобы вызвать сетевое исключение
+            String invalidUrl = "https://invalid-domain-for-testing-purposes.com";
+
+            Url url = new Url(invalidUrl);
+            url.setCreatedAt(Timestamp.from(Instant.now()));
+            UrlRepository.save(url);
+
+            // Выполняем POST-запрос на проверку
+            try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
+                // Код зашел в catch и сделал ctx.redirect(...), поэтому ожидаем статус 302
+                assertThat(response.code()).isEqualTo(200);
+
+                // Проверяем, что редирект ведет именно на страницу этого URL
+                String body = response.body().string();
+
+                // Проверяем, что мы находимся на странице нужного URL
+                assertThat(body).contains("Сайт: " + invalidUrl);
+            }
+
+            // Проверяем, что в базе данных не появилось проверок для этого URL
+            var checks = UrlCheckRepository.findByUrlId(url.getId());
+            assertThat(checks).isEmpty();
+        });
+    }
 }
