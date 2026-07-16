@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY app .
 
-RUN gradle clean build
+RUN chmod +x gradlew
+RUN ./gradlew clean build
 
 EXPOSE 7070
 
