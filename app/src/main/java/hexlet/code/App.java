@@ -57,7 +57,7 @@ public class App {
     private static final int SOCKET_TIMEOUT = 5000;
 
     private static TemplateEngine createTemplateEngine() {
-        Path path = Paths.get("src/main/jte").toAbsolutePath();
+        Path path = Paths.get("src/main/resources/templates").toAbsolutePath();
         System.out.println("Looking for templates in: " + path);
         DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(path);
         return TemplateEngine.create(codeResolver, ContentType.Html);

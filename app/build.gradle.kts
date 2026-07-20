@@ -130,8 +130,7 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-tasks.processResources {
-    from("src/main/resources") {
-        include("**/*.jte")
-    }
+
+tasks.withType<ProcessResources>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
