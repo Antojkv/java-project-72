@@ -545,17 +545,15 @@ public class AppTest {
         var method = App.class.getDeclaredMethod("isValidInputUrl", String.class);
         method.setAccessible(true);
 
-        // Проверяем валидные URL (с протоколом)
         assertThat(method.invoke(null, "https://example.com")).isEqualTo(true);
         assertThat(method.invoke(null, "http://example.com")).isEqualTo(true);
 
-        // Проверяем невалидные URL
         assertThat(method.invoke(null, (String) null)).isEqualTo(false);
         assertThat(method.invoke(null, "")).isEqualTo(false);
         assertThat(method.invoke(null, "   ")).isEqualTo(false);
         assertThat(method.invoke(null, "not-a-valid-url")).isEqualTo(false);
         assertThat(method.invoke(null, "://invalid")).isEqualTo(false);
-        // URL без протокола — невалидный
+
         assertThat(method.invoke(null, "example.com")).isEqualTo(false);
     }
 
@@ -573,7 +571,6 @@ public class AppTest {
         var method = App.class.getDeclaredMethod("getPort", Map.class);
         method.setAccessible(true);
 
-        // Проверяем, что возвращается порт по умолчанию
         Map<String, String> env = Map.of();
         Object result = method.invoke(null, env);
         assertThat(result).isEqualTo(7070);
@@ -631,7 +628,7 @@ public class AppTest {
 
     @Test
     void testIsValidUrlReturnsFalseWhenHostIsNull() throws URISyntaxException {
-        // Даже если URI валиден, но хоста нет — считаем невалидным
+
         assertFalse(App.isValidUrl("https://"));
     }
 
@@ -640,86 +637,77 @@ public class AppTest {
         Path templatePath = Paths.get("src/main/resources/templates/index.jte");
         Path backupPath = Paths.get("src/main/resources/templates/index.jte.backup");
 
-        // Создаём резервную копию, если её нет
         if (!Files.exists(backupPath)) {
             Files.copy(templatePath, backupPath);
         }
 
         try {
-            // Удаляем оригинальный файл
-            Files.delete(templatePath);
 
-            // Выполняем тест...
+            Files.move(templatePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+
             JavalinTest.test(app, (server, client) -> {
-                var response = client.get("/");
-                // Проверяем, что ошибка обрабатывается
+                try (Response response = client.get("/")) {
+                    assertThat(response.code()).isEqualTo(200);
+                    String body = response.body().string();
+                    assertThat(body).contains("Error");
+                }
             });
 
         } finally {
-            // ВСЕГДА восстанавливаем файл
             if (Files.exists(backupPath)) {
-                Files.copy(backupPath, templatePath, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(backupPath, templatePath, StandardCopyOption.REPLACE_EXISTING);
             }
         }
     }
 
     @Test
     public void testAppStartWithCustomPort() throws Exception {
-        // Используем порт 0, чтобы ОС сама выделила безопасный свободный порт
         Map<String, String> env = Map.of("PORT", "0");
 
-        // Нам не нужно запускать отдельный поток, так как Javalin.start() не блокирует выполнение.
-        // Запускаем напрямую и проверяем, что метод выполняется без исключений.
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
             App.start(env);
         });
 
-        // На всякий случай гасим Javalin, чтобы освободить порт 0 (если он не закрылся автоматически)
         try {
             App.getApp().stop();
         } catch (Exception e) {
-            // Игнорируем, если сервер уже остановлен
+
         }
     }
 
     @Test
     public void testMainMethodWithMockedEnv() {
-        // Проверяем, что вызов main() проходит без падения всего приложения
+
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
             App.main(new String[]{});
         });
 
-        // Гасим дефолтный инстанс Javalin
         try {
             App.getApp().stop();
         } catch (Exception e) {
-            // Игнорируем
+
         }
     }
 
     @Test
     public void testCreateCheckWithNetworkError() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-            // Используем невалидный адрес, чтобы вызвать сетевое исключение
+
             String invalidUrl = "https://invalid-domain-for-testing-purposes.com";
 
             Url url = new Url(invalidUrl);
             url.setCreatedAt(Timestamp.from(Instant.now()));
             UrlRepository.save(url);
 
-            // Выполняем POST-запрос на проверку
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
-                // Код зашел в catch и сделал ctx.redirect(...), поэтому ожидаем статус 302
+
                 assertThat(response.code()).isEqualTo(200);
 
-                // Проверяем, что редирект ведет именно на страницу этого URL
                 String body = response.body().string();
 
-                // Проверяем, что мы находимся на странице нужного URL
                 assertThat(body).contains("Сайт: " + invalidUrl);
             }
 
-            // Проверяем, что в базе данных не появилось проверок для этого URL
             var checks = UrlCheckRepository.findByUrlId(url.getId());
             assertThat(checks).isEmpty();
         });
