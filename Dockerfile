@@ -1,15 +1,9 @@
-FROM gradle:8.10-jdk21 AS build
+FROM gradle:8.12.1-jdk21
 
 WORKDIR /app
-COPY app .
 
-RUN chmod +x gradlew
-RUN ./gradlew clean build installDist
+COPY /app .
 
-FROM eclipse-temurin:21-jre
+RUN ["./gradlew", "clean", "build"]
 
-WORKDIR /app
-COPY --from=build /app/build/install/app /app
-
-EXPOSE 7070
-CMD ["/app/bin/app"]
+CMD ["./gradlew", "run"]
