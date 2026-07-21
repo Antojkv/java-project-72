@@ -118,24 +118,6 @@ tasks.jar {
     }
 }
 
-tasks.shadowJar {
-    archiveBaseName.set("app")
-    archiveClassifier.set("")
-    archiveVersion.set("")
-    mergeServiceFiles()
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    from(sourceSets.main.get().resources) {
-        include("**/*.jte")
-        include("**/*.sql")
-    }
-}
-
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
-}
-
-
-tasks.withType<ProcessResources>().configureEach {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
