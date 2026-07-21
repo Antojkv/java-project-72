@@ -124,6 +124,10 @@ tasks.shadowJar {
     archiveVersion.set("")
     mergeServiceFiles()
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(sourceSets.main.get().resources) {
+        include("**/*")
+    }
 }
 
 tasks.withType<JavaCompile> {
