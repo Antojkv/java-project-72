@@ -126,7 +126,8 @@ tasks.shadowJar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     from(sourceSets.main.get().resources) {
-        include("**/*")
+        include("**/*.jte")
+        include("**/*.sql")
     }
 }
 
