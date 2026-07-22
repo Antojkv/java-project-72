@@ -628,7 +628,6 @@ public class AppTest {
 
     @Test
     void testIsValidUrlReturnsFalseWhenHostIsNull() throws URISyntaxException {
-
         assertFalse(App.isValidUrl("https://"));
     }
 
@@ -663,11 +662,9 @@ public class AppTest {
     @Test
     public void testAppStartWithCustomPort() throws Exception {
         Map<String, String> env = Map.of("PORT", "0");
-
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
             App.start(env);
         });
-
         try {
             App.getApp().stop();
         } catch (Exception e) {
@@ -700,11 +697,8 @@ public class AppTest {
             UrlRepository.save(url);
 
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
-
                 assertThat(response.code()).isEqualTo(200);
-
                 String body = response.body().string();
-
                 assertThat(body).contains("Сайт: " + invalidUrl);
             }
 
