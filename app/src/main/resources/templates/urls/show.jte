@@ -39,7 +39,7 @@
             <button type="submit" class="btn btn-primary">Запустить проверку</button>
         </form>
 
-        <table class="table table-bordered" data-test="urls">
+        <table class="table table-bordered" data-test="checks">
             <thead>
                 <tr>
                     <th>ID</th>
