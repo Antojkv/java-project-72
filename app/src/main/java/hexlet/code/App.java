@@ -1,6 +1,6 @@
 package hexlet.code;
 
-import gg.jte.resolve.DirectoryCodeResolver;
+import gg.jte.resolve.ResourceCodeResolver;
 import hexlet.code.dto.MainPage;
 import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlCheckRepository;
@@ -21,8 +21,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
@@ -57,9 +55,9 @@ public class App {
     private static final int SOCKET_TIMEOUT = 5000;
 
     private static TemplateEngine createTemplateEngine() {
-        Path path = Paths.get("src/main/resources/templates").toAbsolutePath();
-        System.out.println("Looking for templates in: " + path);
-        DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(path);
+        ClassLoader classLoader = App.class.getClassLoader();
+        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
+        System.out.println("Using ResourceCodeResolver for templates");
         return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 

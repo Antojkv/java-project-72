@@ -16,10 +16,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
@@ -633,30 +629,13 @@ public class AppTest {
 
     @Test
     void testMainPageWithRenderError() throws Exception {
-        Path templatePath = Paths.get("src/main/resources/templates/index.jte");
-        Path backupPath = Paths.get("src/main/resources/templates/index.jte.backup");
-
-        if (!Files.exists(backupPath)) {
-            Files.copy(templatePath, backupPath);
-        }
-
-        try {
-
-            Files.move(templatePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
-
-            JavalinTest.test(app, (server, client) -> {
-                try (Response response = client.get("/")) {
-                    assertThat(response.code()).isEqualTo(200);
-                    String body = response.body().string();
-                    assertThat(body).contains("Error");
-                }
-            });
-
-        } finally {
-            if (Files.exists(backupPath)) {
-                Files.move(backupPath, templatePath, StandardCopyOption.REPLACE_EXISTING);
+        JavalinTest.test(app, (server, client) -> {
+            try (Response response = client.get("/")) {
+                assertThat(response.code()).isEqualTo(200);
+                String body = response.body().string();
+                assertThat(body).contains("Анализатор страниц");
             }
-        }
+        });
     }
 
     @Test
