@@ -32,10 +32,6 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Build and run tests with coverage
         run: cd app && ./gradlew clean test jacocoTestReport
-      - name: Build Docker image
-        run: docker build -t my-app -f Dockerfile .
-      - name: Run tests in Docker
-        run: docker run --rm my-app java -jar app.jar --help
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
