@@ -17,18 +17,18 @@
 
         <h1>Сайт: ${url.getName()}</h1>
 
-        <table class="table table-bordered">
+        <table class="table table-bordered" data-test="url">
             <tbody>
                 <tr>
-                    <th>ID</th>
+                    <td>ID</td>
                     <td>${url.getId()}</td>
                 </tr>
                 <tr>
-                    <th>Имя</th>
+                    <td>Имя</td>
                     <td>${url.getName()}</td>
                 </tr>
                 <tr>
-                    <th>Дата создания</th>
+                    <td>Дата создания</td>
                     <td>${url.getCreatedAt().toString()}</td>
                 </tr>
             </tbody>
@@ -39,7 +39,7 @@
             <button type="submit" class="btn btn-primary">Запустить проверку</button>
         </form>
 
-        <table class="table table-bordered" data-test="urls checks">
+        <table class="table table-bordered" data-test="checks">
             <thead>
                 <tr>
                     <th>ID</th>
