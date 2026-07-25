@@ -63,7 +63,7 @@
                 @endfor
             </tbody>
         </table>
-        <table class="table table-bordered" data-test="checks">
+        <table class="table table-bordered" data-test="urls">
                     <thead>
                         <tr>
                             <th>ID</th>
