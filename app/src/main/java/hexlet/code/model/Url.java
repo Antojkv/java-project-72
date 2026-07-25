@@ -16,6 +16,7 @@ public class Url {
     public Long id;
     public String name;
     public Timestamp createdAt;
+    private Integer lastCheckStatusCode;
 
     public Url(String name) {
         this.name = name;

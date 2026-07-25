@@ -12,6 +12,7 @@
                     <th>ID</th>
                     <th>Имя</th>
                     <th>Дата создания</th>
+                    <th>Код ответа</th>
                 </tr>
             </thead>
             <tbody>
@@ -20,6 +21,16 @@
                         <td>${url.getId()}</td>
                         <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
                         <td>${url.getCreatedAt().toString()}</td>
+                        <td>
+                            @if(url.getLastCheckStatusCode() != null)
+                                ${url.getLastCheckStatusCode()}
+                            @else
+                            @endif
+                        </td>
+                    </tr>
+                @else
+                    <tr>
+                        <td colspan="4" class="text-center">Нет добавленных сайтов</td>
                     </tr>
                 @endfor
             </tbody>
