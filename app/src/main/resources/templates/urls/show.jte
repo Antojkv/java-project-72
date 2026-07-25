@@ -63,5 +63,29 @@
                 @endfor
             </tbody>
         </table>
+        <table class="table table-bordered" data-test="checks">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>h1</th>
+                            <th>title</th>
+                            <th>Код ответа</th>
+                            <th>description</th>
+                            <th>Дата создания</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for(var check : checks)
+                            <tr>
+                                <td>${check.getId()}</td>
+                                <td>${check.getH1() != null ? check.getH1() : ""}</td>
+                                <td>${check.getTitle() != null ? check.getTitle() : ""}</td>
+                                <td>${check.getStatusCode()}</td>
+                                <td>${check.getDescription() != null ? check.getDescription() : ""}</td>
+                                <td>${check.getCreatedAt().toString()}</td>
+                            </tr>
+                        @endfor
+                    </tbody>
+                </table>
     `
 )
