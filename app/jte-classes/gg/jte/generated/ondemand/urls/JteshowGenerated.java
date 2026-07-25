@@ -22,7 +22,7 @@ public final class JteshowGenerated {
 				jteOutput.writeContent("\n\n        <h1>Сайт: ");
 				jteOutput.setContext("h1", null);
 				jteOutput.writeUserContent(url.getName());
-				jteOutput.writeContent("</h1>\n\n        <table class=\"table table-bordered\" data-test=\"urls\">\n            <tbody>\n                <tr>\n                    <th>ID</th>\n                    <td>");
+				jteOutput.writeContent("</h1>\n\n        <table class=\"table table-bordered\">\n            <tbody>\n                <tr>\n                    <th>ID</th>\n                    <td>");
 				jteOutput.setContext("td", null);
 				jteOutput.writeUserContent(url.getId());
 				jteOutput.writeContent("</td>\n                </tr>\n                <tr>\n                    <th>Имя</th>\n                    <td>");
@@ -35,7 +35,7 @@ public final class JteshowGenerated {
 				jteOutput.setContext("form", "action");
 				jteOutput.writeUserContent(url.getId());
 				jteOutput.setContext("form", null);
-				jteOutput.writeContent("/checks\" method=\"post\" class=\"mb-3\">\n            <button type=\"submit\" class=\"btn btn-primary\">Запустить проверку</button>\n        </form>\n\n        <table class=\"table table-bordered\" data-test=\"checks\">\n            <thead>\n                <tr>\n                    <th>ID</th>\n                    <th>Код ответа</th>\n                    <th>h1</th>\n                    <th>title</th>\n                    <th>description</th>\n                    <th>Дата создания</th>\n                </tr>\n            </thead>\n            <tbody>\n                ");
+				jteOutput.writeContent("/checks\" method=\"post\" class=\"mb-3\">\n            <button type=\"submit\" class=\"btn btn-primary\">Запустить проверку</button>\n        </form>\n\n        <table class=\"table table-bordered\" data-test=\"urls checks\">\n            <thead>\n                <tr>\n                    <th>ID</th>\n                    <th>Код ответа</th>\n                    <th>h1</th>\n                    <th>title</th>\n                    <th>description</th>\n                    <th>Дата создания</th>\n                </tr>\n            </thead>\n            <tbody>\n                ");
 				for (var check : checks) {
 					jteOutput.writeContent("\n                    <tr>\n                        <td>");
 					jteOutput.setContext("td", null);
