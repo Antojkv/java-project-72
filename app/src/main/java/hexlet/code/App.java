@@ -228,8 +228,8 @@ public class App {
         String userAgent = ctx.header("User-Agent");
         String accept = ctx.header("Accept");
 
-        if (userAgent != null && userAgent.contains("Mozilla") &&
-                accept != null && accept.contains("text/html")) {
+        if (userAgent != null && userAgent.contains("Mozilla")
+                && accept != null && accept.contains("text/html")) {
             ctx.status(STATUS_UNPROCESSABLE_ENTITY);
         } else {
             ctx.status(200);
