@@ -395,6 +395,9 @@ public class App {
     }
 
     public static void start(Map<String, String> env) {
+
+        System.setProperty("jte.compileMode", "OFF");
+
         int port = getPort(env);
         try {
             Javalin app = getApp();

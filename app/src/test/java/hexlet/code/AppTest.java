@@ -713,43 +713,30 @@ public class AppTest {
     }
 
     @Test
-    void testNormalizeUrl_whenHostIsNull_thenReturnsSchemeOnly() throws URISyntaxException {
-        // Этот URL специально подобран так, чтобы getHost() был null,
-        // а split дал пустой host — это проверяет ветку if (host == null) и тернарный оператор
+    void testNormalizeUrlwhenHostIsNullthenReturnsSchemeOnly() throws URISyntaxException {
         String input = "http:///example.com";
         String result = App.normalizeUrl(input);
-
-        // Сейчас твой код вернёт "http://", и мы это проверяем
         assertThat(result).isEqualTo("http://");
     }
 
     @Test
-    public void testNormalizeUrl_whenCustomPort_thenIncludePortInResult() throws URISyntaxException {
+    public void testNormalizeUrlwhenCustomPortthenIncludePortInResult() throws URISyntaxException {
         String input = "http://localhost:8080/api";
-
         String result = App.normalizeUrl(input);
-
         assertThat(result).isEqualTo("http://localhost:8080");
     }
 
     @Test
-    public void testNormalizeUrl_whenNoProtocol_thenAddHttps() throws URISyntaxException {
+    public void testNormalizeUrlwhenNoProtocolthenAddHttps() throws URISyntaxException {
         String input = "example.com/page";
-
         String result = App.normalizeUrl(input);
-
         assertThat(result).isEqualTo("https://example.com");
     }
 
     @Test
-    public void testNormalizeUrl_whenEmptyHostAfterSplit_thenReturnEmptyHost() throws URISyntaxException {
-        // Пытаемся создать ситуацию, где schemeSpecificPart есть, но split даст пустой элемент
-        // Например: https:/// (три слэша)
+    public void testNormalizeUrlwhenEmptyHostAfterSplitthenReturnEmptyHost() throws URISyntaxException {
         String input = "https:///";
-
         String result = App.normalizeUrl(input);
-
-        // Ожидаем, что хост будет пустым, и метод вернет просто схему
         assertThat(result).isEqualTo("https://");
     }
 }
