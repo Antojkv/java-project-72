@@ -9,6 +9,7 @@ import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.Response;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -683,6 +684,31 @@ public class AppTest {
 
             var checks = UrlCheckRepository.findByUrlId(url.getId());
             assertThat(checks).isEmpty();
+        });
+    }
+
+    @Test
+    void testUrlCheckError() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            String urlName = "http://this-domain-does-not-exist-" + System.currentTimeMillis() + ".test";
+
+            try (Response response = client.post("/urls", "url=" + urlName)) {
+                assertThat(response.code()).isEqualTo(200);
+            }
+
+            try (Response response = client.get("/urls")) {
+                String body = response.body().string();
+                var doc = Jsoup.parse(body);
+                var idElement = doc.select("table[data-test=urls] tbody tr:first-child td:first-child");
+                String id = idElement.text();
+
+                try (Response checkResponse = client.post("/urls/" + id + "/checks", "")) {
+                    assertThat(checkResponse.code()).isEqualTo(200);
+                }
+
+                var checks = UrlCheckRepository.findByUrlId(Long.parseLong(id));
+                assertThat(checks).isEmpty();
+            }
         });
     }
 }

@@ -36,7 +36,7 @@ public class App {
     public static final String FLASH_DUPLICATE_URL = "Страница уже существует";
     private static final String FLASH_SUCCESS_ADD = "Страница успешно добавлена";
     private static final String FLASH_SUCCESS_CHECK = "Страница успешно проверена";
-    private static final String FLASH_ERROR_CHECK = "Произошла ошибка при проверке";
+    public static final String FLASH_ERROR_CHECK = "Произошла ошибка при проверке";
     private static final String FLASH_URL_NOT_FOUND = "URL not found";
     private static final String PATH_URLS = "/urls";
     private static final String PATH_INDEX = "index.jte";
