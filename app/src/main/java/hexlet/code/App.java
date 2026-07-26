@@ -161,7 +161,7 @@ public class App {
             String rawUrl = ctx.formParam(PARAM_URL);
 
             if (!isValidInputUrl(rawUrl)) {
-                handleInvalidUrl(ctx, FLASH_ERROR_URL);
+                handleInvalidUrlForMainPage(ctx, FLASH_ERROR_URL);
                 return;
             }
 
@@ -187,7 +187,7 @@ public class App {
             String normalized = normalizeUrl(rawUrl);
             return normalized;
         } catch (URISyntaxException e) {
-            handleInvalidUrl(ctx, "Некорректный URL");
+            handleInvalidUrlForMainPage(ctx, "Некорректный URL");
             return null;
         }
     }
@@ -203,7 +203,7 @@ public class App {
             }
             return null;
         } catch (Exception e) {
-            handleInvalidUrl(ctx, FLASH_ERROR_URL);
+            handleInvalidUrlForMainPage(ctx, FLASH_ERROR_URL);
             return null;
         }
     }
@@ -216,14 +216,24 @@ public class App {
             ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_ADD);
             ctx.redirect(PATH_URLS + "/" + url.getId());
         } catch (Exception e) {
-            handleInvalidUrl(ctx, FLASH_ERROR_URL);
+            handleInvalidUrlForMainPage(ctx, FLASH_ERROR_URL);
         }
     }
 
-    private static void handleInvalidUrl(Context ctx, String message) {
+    private static void handleInvalidUrlForMainPage(Context ctx, String message) {
+        ctx.sessionAttribute(PARAM_FLASH, message);
+        MainPage page = new MainPage();
+        page.setFlash(message);
+        ctx.status(200);
+        ctx.render(PATH_INDEX, Map.of(PARAM_PAGE, page));
+    }
+
+    private static void handleInvalidUrlForValidation(Context ctx, String message) {
         ctx.sessionAttribute(PARAM_FLASH, message);
         ctx.status(STATUS_UNPROCESSABLE_ENTITY);
-        ctx.redirect("/");
+        MainPage page = new MainPage();
+        page.setFlash(message);
+        ctx.render(PATH_INDEX, Map.of(PARAM_PAGE, page));
     }
 
     private static void configureUrlsList(Javalin app) {
