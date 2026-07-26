@@ -225,8 +225,8 @@ public class App {
         MainPage page = new MainPage();
         page.setFlash(message);
 
-        String referer = ctx.header("Referer");
-        if (referer != null && referer.contains("/urls")) {
+        String xRequestedWith = ctx.header("X-Requested-With");
+        if ("XMLHttpRequest".equals(xRequestedWith)) {
             ctx.status(STATUS_UNPROCESSABLE_ENTITY);
         } else {
             ctx.status(200);
