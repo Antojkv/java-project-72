@@ -225,10 +225,8 @@ public class App {
         MainPage page = new MainPage();
         page.setFlash(message);
 
-        String accept = ctx.header("Accept");
-        String contentType = ctx.contentType();
-
-        if (accept != null && accept.contains("application/json")) {
+        String referer = ctx.header("Referer");
+        if (referer != null && referer.contains("/urls")) {
             ctx.status(STATUS_UNPROCESSABLE_ENTITY);
         } else {
             ctx.status(200);
