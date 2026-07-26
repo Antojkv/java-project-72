@@ -225,8 +225,11 @@ public class App {
         MainPage page = new MainPage();
         page.setFlash(message);
 
-        String xRequestedWith = ctx.header("X-Requested-With");
-        if ("XMLHttpRequest".equals(xRequestedWith)) {
+        String userAgent = ctx.header("User-Agent");
+        String accept = ctx.header("Accept");
+
+        if (userAgent != null && userAgent.contains("Mozilla") &&
+                accept != null && accept.contains("text/html")) {
             ctx.status(STATUS_UNPROCESSABLE_ENTITY);
         } else {
             ctx.status(200);
