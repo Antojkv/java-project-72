@@ -230,6 +230,18 @@ public class App {
         app.get(PATH_URLS, ctx -> {
             try {
                 var urls = UrlRepository.all();
+
+                for (Url url : urls) {
+                    try {
+                        var lastCheck = UrlCheckRepository.findLastByUrlId(url.getId());
+                        if (lastCheck != null) {
+                            url.setLastCheckStatusCode(lastCheck.getStatusCode());
+                        }
+                    } catch (Exception e) {
+                        LOG.warn("Could not get last check for URL id: {}", url.getId());
+                    }
+                }
+
                 String flash = ctx.sessionAttribute(PARAM_FLASH);
                 ctx.sessionAttribute(PARAM_FLASH, null);
                 MainPage page = new MainPage();
