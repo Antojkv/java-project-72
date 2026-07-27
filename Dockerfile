@@ -21,13 +21,14 @@ COPY app/config config
 # Собираем проект
 RUN ./gradlew --no-daemon shadowJar
 
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 COPY --from=build /app/build/libs/app.jar /app/app.jar
 
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=60.0 -XX:InitialRAMPercentage=50.0"
+ENV JAVA_OPTS="-Djte.compileMode=OFF -XX:+UseContainerSupport -XX:MaxRAMPercentage=60.0 -XX:InitialRAMPercentage=50.0"
+
 EXPOSE 7070
 
-CMD ["java", "-jar", "app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
 

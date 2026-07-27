@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import java.sql.Timestamp;
+import java.time.format.DateTimeFormatter;
 
 @Getter
 @Setter
@@ -38,5 +39,13 @@ public class UrlCheck {
             return str;
         }
         return str.substring(0, Math.min(197, str.length())) + "...";
+    }
+
+    public String getFormattedCreatedAt() {
+        if (createdAt == null) {
+            return "";
+        }
+        return createdAt.toLocalDateTime()
+                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
     }
 }

@@ -10,6 +10,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.Response;
 import org.jsoup.Jsoup;
+import hexlet.code.controller.UrlController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -513,19 +514,19 @@ public class AppTest {
 
     @Test
     public void testIsErrorStatusCodeForVariousCodes() throws Exception {
-        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+        assertThat(UrlController.class.getDeclaredMethod("isErrorStatusCode", int.class)
                 .invoke(null, 200)).isEqualTo(false);
-        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+        assertThat(UrlController.class.getDeclaredMethod("isErrorStatusCode", int.class)
                 .invoke(null, 302)).isEqualTo(false);
-        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+        assertThat(UrlController.class.getDeclaredMethod("isErrorStatusCode", int.class)
                 .invoke(null, 404)).isEqualTo(true);
-        assertThat(App.class.getDeclaredMethod("isErrorStatusCode", int.class)
+        assertThat(UrlController.class.getDeclaredMethod("isErrorStatusCode", int.class)
                 .invoke(null, 500)).isEqualTo(true);
     }
 
     @Test
     public void testIsErrorStatusCodeMethod() throws Exception {
-        var method = App.class.getDeclaredMethod("isErrorStatusCode", int.class);
+        var method = UrlController.class.getDeclaredMethod("isErrorStatusCode", int.class);
         method.setAccessible(true);
 
         assertThat(method.invoke(null, 200)).isEqualTo(false);
@@ -539,7 +540,7 @@ public class AppTest {
 
     @Test
     public void testIsValidInputUrlMethod() throws Exception {
-        var method = App.class.getDeclaredMethod("isValidInputUrl", String.class);
+        var method = UrlController.class.getDeclaredMethod("isValidInputUrl", String.class);
         method.setAccessible(true);
 
         assertThat(method.invoke(null, "https://example.com")).isEqualTo(true);
@@ -556,7 +557,7 @@ public class AppTest {
 
     @Test
     public void testIsValidUrlWithFtp() throws Exception {
-        var method = App.class.getDeclaredMethod("isValidUrl", String.class);
+        var method = UrlController.class.getDeclaredMethod("isValidUrl", String.class);
         method.setAccessible(true);
 
         assertThat(method.invoke(null, "ftp://example.com")).isEqualTo(false);
@@ -605,27 +606,27 @@ public class AppTest {
 
     @Test
     void testNormalizeUrlWithPort80() throws URISyntaxException {
-        assertEquals("http://example.com", App.normalizeUrl("http://example.com:80"));
+        assertEquals("http://example.com", UrlController.normalizeUrl("http://example.com:80"));
     }
 
     @Test
     void testNormalizeUrlWithPort443() throws URISyntaxException {
-        assertEquals("https://example.com", App.normalizeUrl("https://example.com:443"));
+        assertEquals("https://example.com", UrlController.normalizeUrl("https://example.com:443"));
     }
 
     @Test
     void testNormalizeUrlWithCustomPort() throws URISyntaxException {
-        assertEquals("http://example.com:8080", App.normalizeUrl("http://example.com:8080/path"));
+        assertEquals("http://example.com:8080", UrlController.normalizeUrl("http://example.com:8080/path"));
     }
 
     @Test
     void testIsValidUrlReturnsFalseForInvalidUri() {
-        assertFalse(App.isValidUrl("not-a-valid-uri"));
+        assertFalse(UrlController.isValidUrl("not-a-valid-uri"));
     }
 
     @Test
     void testIsValidUrlReturnsFalseWhenHostIsNull() throws URISyntaxException {
-        assertFalse(App.isValidUrl("https://"));
+        assertFalse(UrlController.isValidUrl("https://"));
     }
 
     @Test
@@ -715,28 +716,28 @@ public class AppTest {
     @Test
     void testNormalizeUrlwhenHostIsNullthenReturnsSchemeOnly() throws URISyntaxException {
         String input = "http:///example.com";
-        String result = App.normalizeUrl(input);
+        String result = UrlController.normalizeUrl(input);
         assertThat(result).isEqualTo("http://");
     }
 
     @Test
     public void testNormalizeUrlwhenCustomPortthenIncludePortInResult() throws URISyntaxException {
         String input = "http://localhost:8080/api";
-        String result = App.normalizeUrl(input);
+        String result = UrlController.normalizeUrl(input);
         assertThat(result).isEqualTo("http://localhost:8080");
     }
 
     @Test
     public void testNormalizeUrlwhenNoProtocolthenAddHttps() throws URISyntaxException {
         String input = "example.com/page";
-        String result = App.normalizeUrl(input);
+        String result = UrlController.normalizeUrl(input);
         assertThat(result).isEqualTo("https://example.com");
     }
 
     @Test
     public void testNormalizeUrlwhenEmptyHostAfterSplitthenReturnEmptyHost() throws URISyntaxException {
         String input = "https:///";
-        String result = App.normalizeUrl(input);
+        String result = UrlController.normalizeUrl(input);
         assertThat(result).isEqualTo("https://");
     }
 }

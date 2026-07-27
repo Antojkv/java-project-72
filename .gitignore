@@ -1,3 +1,7 @@
+# JTE сгенерированные файлы
+app/jte-classes/
+jte-classes/
+
 # Gradle
 .gradle/
 build/

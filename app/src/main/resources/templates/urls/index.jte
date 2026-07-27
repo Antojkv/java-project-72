@@ -12,6 +12,7 @@
                     <th>ID</th>
                     <th>Имя</th>
                     <th>Дата создания</th>
+                    <th>Дата последней проверки</th>
                     <th>Код ответа</th>
                 </tr>
             </thead>
@@ -20,17 +21,21 @@
                     <tr>
                         <td>${url.getId()}</td>
                         <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
-                        <td>${url.getCreatedAt().toString()}</td>
+                        <td>${url.getCreatedAt().toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}</td>
+                        <td>
+                            @if(url.getLastCheckCreatedAt() != null)
+                                ${url.getLastCheckCreatedAt().toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}
+                            @endif
+                        </td>
                         <td>
                             @if(url.getLastCheckStatusCode() != null)
                                 ${url.getLastCheckStatusCode()}
-                            @else
                             @endif
                         </td>
                     </tr>
                 @else
                     <tr>
-                        <td colspan="4" class="text-center">Нет добавленных сайтов</td>
+                        <td colspan="5" class="text-center">Нет добавленных сайтов</td>
                     </tr>
                 @endfor
             </tbody>
