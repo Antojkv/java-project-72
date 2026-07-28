@@ -45,9 +45,16 @@ public class App {
 
     private static HikariDataSource setupDataSource() throws Exception {
         var hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl(getDatabaseUrl());
+        String jdbcUrl = getDatabaseUrl();
+        hikariConfig.setJdbcUrl(jdbcUrl);
         hikariConfig.setMaximumPoolSize(5);
-        hikariConfig.setDriverClassName("org.h2.Driver");
+
+        if (jdbcUrl.startsWith("jdbc:postgresql")) {
+            hikariConfig.setDriverClassName("org.postgresql.Driver");
+        } else if (jdbcUrl.startsWith("jdbc:h2")) {
+            hikariConfig.setDriverClassName("org.h2.Driver");
+        }
+
         var dataSource = new HikariDataSource(hikariConfig);
 
         String sql = readResourceFile("schema.sql");
@@ -60,7 +67,6 @@ public class App {
         }
 
         BaseRepository.setDataSource(dataSource);
-
         return dataSource;
     }
 
