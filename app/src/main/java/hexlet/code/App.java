@@ -6,8 +6,7 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.resolve.ResourceCodeResolver;
 import hexlet.code.controller.UrlController;
-import hexlet.code.repository.UrlCheckRepository;
-import hexlet.code.repository.UrlRepository;
+import hexlet.code.repository.BaseRepository;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinJte;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +47,7 @@ public class App {
         var hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(getDatabaseUrl());
         hikariConfig.setMaximumPoolSize(5);
+        hikariConfig.setDriverClassName("org.h2.Driver");
         var dataSource = new HikariDataSource(hikariConfig);
 
         String sql = readResourceFile("schema.sql");
@@ -59,8 +59,7 @@ public class App {
             }
         }
 
-        UrlRepository.setDataSource(dataSource);
-        UrlCheckRepository.setDataSource(dataSource);
+        BaseRepository.setDataSource(dataSource);
 
         return dataSource;
     }

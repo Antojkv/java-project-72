@@ -1,9 +1,18 @@
 @import java.util.List
-@import hexlet.code.model.Url
-@param List<Url> urls
+@import hexlet.code.dto.UrlWithLastCheckDto
+@import hexlet.code.dto.MainPage
+@param List<UrlWithLastCheckDto> urls
+@param MainPage page
 
 @template.layout.page(
     content = @`
+        @if(page != null && page.getFlash() != null && !page.getFlash().isEmpty())
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                ${page.getFlash()}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         <h1>Сайты</h1>
 
         <table class="table table-bordered" data-test="urls">
@@ -21,10 +30,12 @@
                     <tr>
                         <td>${url.getId()}</td>
                         <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
-                        <td>${url.getCreatedAt().toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}</td>
+                        <td>${url.getFormattedCreatedAt()}</td>
                         <td>
                             @if(url.getLastCheckCreatedAt() != null)
-                                ${url.getLastCheckCreatedAt().toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"))}
+                                ${url.getFormattedLastCheckCreatedAt()}
+                            @else
+                                Нет проверок
                             @endif
                         </td>
                         <td>

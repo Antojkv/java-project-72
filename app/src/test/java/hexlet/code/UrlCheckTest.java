@@ -3,7 +3,6 @@ package hexlet.code;
 import hexlet.code.model.UrlCheck;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +35,7 @@ public class UrlCheckTest {
         String h1 = "Test Header";
         String title = "Test Title";
         String description = "Test Description";
-        Timestamp createdAt = Timestamp.from(Instant.now());
+        Instant createdAt = Instant.now();
 
         UrlCheck check = new UrlCheck(id, urlId, statusCode, h1, title, description, createdAt);
 
@@ -58,7 +57,7 @@ public class UrlCheckTest {
         check.setH1("Test Header");
         check.setTitle("Test Title");
         check.setDescription("Test Description");
-        check.setCreatedAt(Timestamp.from(Instant.now()));
+        check.setCreatedAt(Instant.now());
 
         assertThat(check.getId()).isEqualTo(1L);
         assertThat(check.getUrlId()).isEqualTo(1L);
@@ -71,7 +70,7 @@ public class UrlCheckTest {
 
     @Test
     public void testUrlCheckTruncateLongText() {
-        // Создаём очень длинный текст
+
         String longText = "a".repeat(250);
         String expected = "a".repeat(197) + "...";
 
@@ -111,7 +110,7 @@ public class UrlCheckTest {
         String h1 = "Not Found";
         String title = "404 Page";
         String description = "Page not found";
-        Timestamp createdAt = Timestamp.from(Instant.now());
+        Instant createdAt = Instant.now();
 
         check.setId(id);
         check.setUrlId(urlId);

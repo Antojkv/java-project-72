@@ -2,6 +2,7 @@ package hexlet.code;
 
 import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.BaseRepository;
 import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.Javalin;
@@ -9,7 +10,6 @@ import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.Response;
-import org.jsoup.Jsoup;
 import hexlet.code.controller.UrlController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
 
@@ -31,7 +30,6 @@ public class AppTest {
     private static MockWebServer mockServer;
     private static String mockUrl;
     private Javalin app;
-
 
     @BeforeAll
     public static void setUpMock() throws IOException {
@@ -50,7 +48,7 @@ public class AppTest {
     public void setUp() throws Exception {
         System.setProperty("JDBC_DATABASE_URL", "jdbc:h2:mem:test");
         app = App.getApp();
-        try (var conn = UrlRepository.getDataSource().getConnection();
+        try (var conn = BaseRepository.getDataSource().getConnection();
              var stmt = conn.createStatement()) {
             stmt.execute("DELETE FROM url_checks");
             stmt.execute("DELETE FROM urls");
@@ -119,7 +117,7 @@ public class AppTest {
     public void testCreateDuplicateUrl() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             Url existingUrl = new Url("https://example.com");
-            existingUrl.setCreatedAt(Timestamp.from(Instant.now()));
+            existingUrl.setCreatedAt(Instant.now());
             UrlRepository.save(existingUrl);
             String requestBody = "url=https://example.com";
             try (Response response = client.post("/urls", requestBody)) {
@@ -134,7 +132,7 @@ public class AppTest {
     public void testUrlsPage() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url("https://example.com");
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
             try (Response response = client.get("/urls")) {
                 assertThat(response.code()).isEqualTo(200);
@@ -149,12 +147,11 @@ public class AppTest {
     public void testUrlPage() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url("https://example.com");
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
             try (Response response = client.get("/urls/" + url.getId())) {
                 assertThat(response.code()).isEqualTo(200);
                 String body = response.body().string();
-                // Убираем обратный слеш
                 assertThat(body).contains("Сайт: https://example.com");
                 assertThat(body).contains("Запустить проверку");
             }
@@ -191,7 +188,7 @@ public class AppTest {
         mockServer.enqueue(mockResponse);
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url(mockUrl);
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
                 assertThat(response.code()).isEqualTo(200);
@@ -212,7 +209,7 @@ public class AppTest {
         mockServer.enqueue(mockResponse);
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url(mockUrl);
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
                 assertThat(response.code()).isEqualTo(200);
@@ -228,7 +225,7 @@ public class AppTest {
 
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url(mockUrl);
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
 
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
@@ -244,12 +241,12 @@ public class AppTest {
     public void testChecksDisplay() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url("https://example.com");
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
             UrlCheck check = new UrlCheck(
                     url.getId(), 200, "Example Domain", "Example Domain", null
             );
-            check.setCreatedAt(Timestamp.from(Instant.now()));
+            check.setCreatedAt(Instant.now());
             UrlCheckRepository.save(check);
             try (Response response = client.get("/urls/" + url.getId())) {
                 assertThat(response.code()).isEqualTo(200);
@@ -332,7 +329,7 @@ public class AppTest {
     @Test
     public void testNormalizeUrlWithInvalidUri() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-            String requestBody = "url=http://[::1]:8080"; // Может вызвать исключение
+            String requestBody = "url=http://[::1]:8080";
             try (Response response = client.post("/urls", requestBody)) {
                 assertThat(response.code()).isEqualTo(200);
             }
@@ -364,7 +361,7 @@ public class AppTest {
         mockServer.enqueue(new MockResponse().setResponseCode(400));
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url(mockUrl);
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now());
             UrlRepository.save(url);
 
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
@@ -409,10 +406,9 @@ public class AppTest {
 
     @Test
     public void testUrlPageWithInternalError() throws Exception {
-
         JavalinTest.test(app, (server, client) -> {
             Url url = new Url("https://test-exception.com");
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now()); // ✅ Исправлено
             UrlRepository.save(url);
 
             try (Response response = client.get("/urls/999999")) {
@@ -424,7 +420,6 @@ public class AppTest {
     @Test
     public void testUrlPageWithInternalServerError() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-
             try (Response response = client.get("/urls/not-a-number")) {
                 assertThat(response.code()).isEqualTo(400);
             }
@@ -492,14 +487,11 @@ public class AppTest {
 
     @Test
     public void testSetupDataSource() throws Exception {
-
         var method = App.class.getDeclaredMethod("setupDataSource");
         method.setAccessible(true);
         var dataSource = method.invoke(null);
         assertThat(dataSource).isNotNull();
     }
-
-
 
     @Test
     public void testUrlPageWithTooLargeId() throws Exception {
@@ -545,13 +537,11 @@ public class AppTest {
 
         assertThat(method.invoke(null, "https://example.com")).isEqualTo(true);
         assertThat(method.invoke(null, "http://example.com")).isEqualTo(true);
-
         assertThat(method.invoke(null, (String) null)).isEqualTo(false);
         assertThat(method.invoke(null, "")).isEqualTo(false);
         assertThat(method.invoke(null, "   ")).isEqualTo(false);
         assertThat(method.invoke(null, "not-a-valid-url")).isEqualTo(false);
         assertThat(method.invoke(null, "://invalid")).isEqualTo(false);
-
         assertThat(method.invoke(null, "example.com")).isEqualTo(false);
     }
 
@@ -625,7 +615,7 @@ public class AppTest {
     }
 
     @Test
-    void testIsValidUrlReturnsFalseWhenHostIsNull() throws URISyntaxException {
+    void testIsValidUrlReturnsFalseWhenHostIsNull() {
         assertFalse(UrlController.isValidUrl("https://"));
     }
 
@@ -655,11 +645,9 @@ public class AppTest {
 
     @Test
     public void testMainMethodWithMockedEnv() {
-
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> {
             App.main(new String[]{});
         });
-
         try {
             App.getApp().stop();
         } catch (Exception e) {
@@ -670,11 +658,10 @@ public class AppTest {
     @Test
     public void testCreateCheckWithNetworkError() throws Exception {
         JavalinTest.test(app, (server, client) -> {
-
             String invalidUrl = "https://invalid-domain-for-testing-purposes.com";
 
             Url url = new Url(invalidUrl);
-            url.setCreatedAt(Timestamp.from(Instant.now()));
+            url.setCreatedAt(Instant.now()); // ✅ Исправлено
             UrlRepository.save(url);
 
             try (Response response = client.post("/urls/" + url.getId() + "/checks")) {
@@ -697,19 +684,16 @@ public class AppTest {
                 assertThat(response.code()).isEqualTo(200);
             }
 
-            try (Response response = client.get("/urls")) {
-                String body = response.body().string();
-                var doc = Jsoup.parse(body);
-                var idElement = doc.select("table[data-test=urls] tbody tr:first-child td:first-child");
-                String id = idElement.text();
+            var urlOpt = UrlRepository.findByName(urlName);
+            assertThat(urlOpt).isPresent();
+            Long urlId = urlOpt.get().getId();
 
-                try (Response checkResponse = client.post("/urls/" + id + "/checks", "")) {
-                    assertThat(checkResponse.code()).isEqualTo(200);
-                }
-
-                var checks = UrlCheckRepository.findByUrlId(Long.parseLong(id));
-                assertThat(checks).isEmpty();
+            try (Response checkResponse = client.post("/urls/" + urlId + "/checks", "")) {
+                assertThat(checkResponse.code()).isEqualTo(200);
             }
+
+            var checks = UrlCheckRepository.findByUrlId(urlId);
+            assertThat(checks).isEmpty();
         });
     }
 

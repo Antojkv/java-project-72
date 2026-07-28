@@ -1,6 +1,7 @@
 package hexlet.code.controller;
 
 import hexlet.code.dto.MainPage;
+import hexlet.code.dto.UrlWithLastCheckDto;
 import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlCheckRepository;
@@ -14,8 +15,9 @@ import org.jsoup.nodes.Document;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -109,27 +111,22 @@ public class UrlController {
     public static void listUrls(Context ctx) {
         try {
             var urls = UrlRepository.all();
+            var latestChecksMap = UrlCheckRepository.findLatestChecksForAllUrls();
 
+            List<UrlWithLastCheckDto> urlDtos = new ArrayList<>();
             for (Url url : urls) {
-                try {
-                    var lastCheck = UrlCheckRepository.findLastByUrlId(url.getId());
-                    if (lastCheck != null) {
-                        url.setLastCheckStatusCode(lastCheck.getStatusCode());
-                        url.setLastCheckCreatedAt(lastCheck.getCreatedAt());
-                    }
-                } catch (Exception e) {
-                    log.warn("Could not get last check for URL id: {}", url.getId());
-                }
+                UrlCheck lastCheck = latestChecksMap.get(url.getId());
+                urlDtos.add(new UrlWithLastCheckDto(url, lastCheck));
             }
 
             String flash = ctx.sessionAttribute(PARAM_FLASH);
             ctx.sessionAttribute(PARAM_FLASH, null);
             MainPage page = new MainPage();
             page.setFlash(flash);
-            ctx.render(PATH_URLS_INDEX, Map.of(PARAM_URLS, urls, PARAM_PAGE, page));
+            ctx.render(PATH_URLS_INDEX, Map.of("urls", urlDtos, PARAM_PAGE, page));
         } catch (Exception e) {
             log.error("Error rendering urls list", e);
-            ctx.status(STATUS_INTERNAL_ERROR).result("Internal server error");
+            ctx.status(STATUS_INTERNAL_ERROR).result("Internal server error: " + e.getMessage());
         }
     }
 
@@ -149,11 +146,27 @@ public class UrlController {
             return;
         }
 
-        Url existingUrl = findExistingUrl(ctx, normalizedUrl);
-        if (existingUrl != null) {
+        try {
+            var existingUrlOpt = UrlRepository.findByName(normalizedUrl);
+            if (existingUrlOpt.isPresent()) {
+                Url existingUrl = existingUrlOpt.get();
+                ctx.sessionAttribute(PARAM_FLASH, FLASH_DUPLICATE_URL);
+                ctx.redirect(PATH_URLS + "/" + existingUrl.getId());
+                return;
+            }
+        } catch (SQLException e) {
+            handleInvalidUrl(ctx, FLASH_ERROR_URL);
             return;
         }
-        saveNewUrl(ctx, normalizedUrl);
+
+        try {
+            Url url = new Url(normalizedUrl);
+            UrlRepository.save(url);
+            ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_ADD);
+            ctx.redirect(PATH_URLS + "/" + url.getId());
+        } catch (SQLException e) {
+            handleInvalidUrl(ctx, FLASH_ERROR_URL);
+        }
     }
 
     public static void showUrlPage(Context ctx) {
@@ -182,7 +195,6 @@ public class UrlController {
                 ctx.status(STATUS_NOT_FOUND).result(FLASH_URL_NOT_FOUND);
                 return;
             }
-
             performUrlCheck(ctx, id, url.get());
         } catch (NumberFormatException e) {
             ctx.status(STATUS_BAD_REQUEST).result("Invalid ID format");
@@ -190,43 +202,6 @@ public class UrlController {
             log.error("Error performing URL check", e);
             ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
             ctx.redirect(PATH_URLS + "/" + ctx.pathParam("id"));
-        }
-    }
-
-    private static String getNormalizedUrl(Context ctx, String rawUrl) {
-        try {
-            return normalizeUrl(rawUrl);
-        } catch (URISyntaxException e) {
-            handleInvalidUrl(ctx, "Некорректный URL");
-            return null;
-        }
-    }
-
-    private static Url findExistingUrl(Context ctx, String normalizedUrl) {
-        try {
-            var existingUrlOpt = UrlRepository.findByName(normalizedUrl);
-            if (existingUrlOpt.isPresent()) {
-                Url existingUrl = existingUrlOpt.get();
-                ctx.sessionAttribute(PARAM_FLASH, FLASH_DUPLICATE_URL);
-                ctx.redirect(PATH_URLS + "/" + existingUrl.getId());
-                return existingUrl;
-            }
-            return null;
-        } catch (Exception e) {
-            handleInvalidUrl(ctx, FLASH_ERROR_URL);
-            return null;
-        }
-    }
-
-    private static void saveNewUrl(Context ctx, String normalizedUrl) {
-        try {
-            Url url = new Url(normalizedUrl);
-            url.setCreatedAt(Timestamp.from(Instant.now()));
-            UrlRepository.save(url);
-            ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_ADD);
-            ctx.redirect(PATH_URLS + "/" + url.getId());
-        } catch (Exception e) {
-            handleInvalidUrl(ctx, FLASH_ERROR_URL);
         }
     }
 
@@ -257,50 +232,39 @@ public class UrlController {
         ctx.render(PATH_URLS_SHOW, Map.of(PARAM_URL, url, PARAM_PAGE, page, PARAM_CHECKS, checks));
     }
 
-    private static void performUrlCheck(Context ctx, Long id, Url url) {
-        try {
-            HttpResponse<String> response = Unirest.get(url.getName())
-                    .connectTimeout(CONNECT_TIMEOUT)
-                    .socketTimeout(SOCKET_TIMEOUT)
-                    .asString();
+    private static void performUrlCheck(Context ctx, Long id, Url url) throws Exception {
+        HttpResponse<String> response = Unirest.get(url.getName())
+                .connectTimeout(CONNECT_TIMEOUT)
+                .socketTimeout(SOCKET_TIMEOUT)
+                .asString();
 
-            int statusCode = response.getStatus();
-            if (isErrorStatusCode(statusCode)) {
-                ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
-                ctx.redirect(PATH_URLS + "/" + id);
-                return;
-            }
-
-            saveCheckResult(ctx, id, response, statusCode);
-        } catch (Exception e) {
-            log.error("Error during URL check", e);
+        int statusCode = response.getStatus();
+        if (isErrorStatusCode(statusCode)) {
             ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
             ctx.redirect(PATH_URLS + "/" + id);
+            return;
         }
+        saveCheckResult(ctx, id, response, statusCode);
     }
 
-    private static void saveCheckResult(Context ctx, Long id, HttpResponse<String> response, int statusCode) {
-        try {
-            var url = UrlRepository.find(id);
-            if (url.isEmpty()) {
-                return;
-            }
-            Document doc = Jsoup.parse(response.getBody(), url.get().getName());
-
-            String title = doc.title();
-            String h1 = doc.selectFirst("h1") != null ? doc.selectFirst("h1").text() : null;
-            String description = doc.selectFirst("meta[name=description]") != null
-                    ? doc.selectFirst("meta[name=description]").attr("content")
-                    : null;
-
-            UrlCheck check = new UrlCheck(id, statusCode, h1, title, description);
-            UrlCheckRepository.save(check);
-
-            ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_CHECK);
-        } catch (Exception e) {
-            log.error("Error saving check result", e);
-            ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
+    private static void saveCheckResult(Context ctx, Long id, HttpResponse<String> response, int statusCode)
+            throws Exception {
+        var url = UrlRepository.find(id);
+        if (url.isEmpty()) {
+            return;
         }
+        Document doc = Jsoup.parse(response.getBody(), url.get().getName());
+
+        String title = doc.title();
+        String h1 = doc.selectFirst("h1") != null ? doc.selectFirst("h1").text() : null;
+        String description = doc.selectFirst("meta[name=description]") != null
+                ? doc.selectFirst("meta[name=description]").attr("content")
+                : null;
+
+        UrlCheck check = new UrlCheck(id, statusCode, h1, title, description);
+        UrlCheckRepository.save(check);
+
+        ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_CHECK);
         ctx.redirect(PATH_URLS + "/" + id);
     }
 }

@@ -2,6 +2,7 @@ package hexlet.code;
 
 import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.BaseRepository;
 import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import com.zaxxer.hikari.HikariConfig;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,8 +26,8 @@ public class UrlCheckRepositoryTest {
         var hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl("jdbc:h2:mem:test");
         dataSource = new HikariDataSource(hikariConfig);
-        UrlRepository.setDataSource(dataSource);
-        UrlCheckRepository.setDataSource(dataSource);
+
+        BaseRepository.setDataSource(dataSource);
 
         try (var conn = dataSource.getConnection();
              var stmt = conn.createStatement()) {
@@ -47,7 +47,7 @@ public class UrlCheckRepositoryTest {
         }
 
         url = new Url("https://example.com");
-        url.setCreatedAt(Timestamp.from(Instant.now()));
+        url.setCreatedAt(Instant.now());
         UrlRepository.save(url);
     }
 
