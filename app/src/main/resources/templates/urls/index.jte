@@ -21,8 +21,8 @@
                     <th>ID</th>
                     <th>Имя</th>
                     <th>Дата создания</th>
-                    <th>Дата последней проверки</th>
-                    <th>Код ответа</th>
+                    <th>Код ответа</th>        <!-- ✅ 4-й столбец -->
+                    <th>Дата последней проверки</th> <!-- ✅ 5-й столбец -->
                 </tr>
             </thead>
             <tbody>
@@ -32,15 +32,15 @@
                         <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
                         <td>${url.getFormattedCreatedAt()}</td>
                         <td>
+                            @if(url.getLastCheckStatusCode() != null)
+                                ${url.getLastCheckStatusCode()}
+                            @endif
+                        </td>
+                        <td>
                             @if(url.getLastCheckCreatedAt() != null)
                                 ${url.getFormattedLastCheckCreatedAt()}
                             @else
                                 Нет проверок
-                            @endif
-                        </td>
-                        <td>
-                            @if(url.getLastCheckStatusCode() != null)
-                                ${url.getLastCheckStatusCode()}
                             @endif
                         </td>
                     </tr>

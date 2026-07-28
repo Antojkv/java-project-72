@@ -4,6 +4,8 @@ import hexlet.code.model.UrlCheck;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -127,5 +129,42 @@ public class UrlCheckTest {
         assertThat(check.getTitle()).isEqualTo(title);
         assertThat(check.getDescription()).isEqualTo(description);
         assertThat(check.getCreatedAt()).isEqualTo(createdAt);
+    }
+
+    @Test
+    public void testGetFormattedCreatedAt() {
+        Instant now = Instant.parse("2026-07-28T19:20:11Z");
+        UrlCheck check = new UrlCheck(1L, 200, "Test Header", "Test Title", "Test Description");
+        check.setCreatedAt(now);
+
+        String formatted = check.getFormattedCreatedAt();
+
+        String expected = now.atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+        assertThat(formatted).isEqualTo(expected);
+    }
+
+    @Test
+    public void testGetFormattedCreatedAtWhenNull() {
+        UrlCheck check = new UrlCheck(1L, 200, "Test Header", "Test Title", "Test Description");
+        check.setCreatedAt(null); // Явно устанавливаем null
+
+        String formatted = check.getFormattedCreatedAt();
+
+        assertThat(formatted).isEmpty();
+    }
+
+    @Test
+    public void testGetFormattedCreatedAtWithCurrentTime() {
+        UrlCheck check = new UrlCheck(1L, 200, "Test Header", "Test Title", "Test Description");
+
+        Instant now = check.getCreatedAt();
+
+        String formatted = check.getFormattedCreatedAt();
+
+        String expected = now.atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+        assertThat(formatted).isEqualTo(expected);
+        assertThat(formatted).matches("\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}:\\d{2}");
     }
 }
