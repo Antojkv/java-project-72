@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Map;
 
@@ -803,5 +804,21 @@ public class AppTest {
         assertThatCode(() -> {
             App.main(new String[]{});
         }).doesNotThrowAnyException();
+    }
+
+    @Test
+    void testSQLExceptionHandlerOnlyBody() {
+        Javalin app = Javalin.create().start(0);
+
+        try {
+
+            app.get("/test-sql", ctx -> {
+                throw new SQLException("Simulated DB error");
+            });
+            var client = java.net.http.HttpClient.newHttpClient();
+
+        } finally {
+            app.stop();
+        }
     }
 }
