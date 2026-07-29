@@ -26,9 +26,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/app.jar /app/app.jar
 
-ENV JAVA_OPTS="-Djte.compileMode=OFF -XX:+UseContainerSupport -XX:MaxRAMPercentage=60.0 -XX:InitialRAMPercentage=50.0"
-
+# ✅ Отключаем компиляцию JTE на лету через системное свойство
+ENV JAVA_OPTS="-Djte.compileMode=OFF"
 EXPOSE 7070
 
+# ✅ Используем sh -c для передачи JAVA_OPTS
 CMD ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
-
