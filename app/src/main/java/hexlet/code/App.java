@@ -10,10 +10,13 @@ import hexlet.code.repository.BaseRepository;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinJte;
 import lombok.extern.slf4j.Slf4j;
+import io.javalin.http.HttpStatus;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -87,6 +90,34 @@ public class App {
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableDevLogging();
             config.fileRenderer(new JavalinJte(templateEngine));
+        });
+
+
+        app.exception(SQLException.class, (e, ctx) -> {
+            log.error("Database error: {}", e.getMessage());
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
+            ctx.sessionAttribute("flash", "Ошибка базы данных: " + e.getMessage());
+            ctx.redirect("/");
+        });
+
+        app.exception(URISyntaxException.class, (e, ctx) -> {
+            log.error("Invalid URL format: {}", e.getMessage());
+            ctx.status(HttpStatus.BAD_REQUEST);
+            ctx.sessionAttribute("flash", "Некорректный URL");
+            ctx.redirect("/");
+        });
+
+        app.exception(NumberFormatException.class, (e, ctx) -> {
+            log.error("Invalid ID format: {}", e.getMessage());
+            ctx.status(HttpStatus.BAD_REQUEST);
+            ctx.result("Invalid ID format");
+        });
+
+        app.exception(Exception.class, (e, ctx) -> {
+            log.error("Unexpected error: {}", e.getMessage(), e);
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
+            ctx.sessionAttribute("flash", "Произошла непредвиденная ошибка");
+            ctx.redirect("/");
         });
 
         configureRoutes(app);

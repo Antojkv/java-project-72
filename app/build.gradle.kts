@@ -133,3 +133,11 @@ tasks.shadowJar {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
+
+sourceSets {
+    main {
+        java {
+            srcDirs("jte-classes")
+        }
+    }
+}

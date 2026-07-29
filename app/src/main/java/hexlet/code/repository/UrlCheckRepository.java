@@ -72,25 +72,21 @@ public class UrlCheckRepository {
         return null;
     }
 
-    public static Map<Long, UrlCheck> findLatestChecksForAllUrls() throws SQLException {
-        var sql = """
-        SELECT DISTINCT ON (url_id) *
-        FROM url_checks
-        ORDER BY url_id DESC, id DESC
-            """;
-
-        var result = new HashMap<Long, UrlCheck>();
+    public static Map<Long, UrlCheck> findLatestChecks() throws SQLException {
+        var sql = "SELECT DISTINCT ON (url_id) * FROM url_checks ORDER BY url_id DESC, id DESC";
 
         try (var conn = dataSource.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            var resultSet = stmt.executeQuery();
+             var stmt = conn.prepareStatement(sql);
+             var resultSet = stmt.executeQuery()) {
+
+            var result = new HashMap<Long, UrlCheck>();
 
             while (resultSet.next()) {
                 var check = mapRowToUrlCheck(resultSet);
                 result.put(check.getUrlId(), check);
             }
+            return result;
         }
-        return result;
     }
 
     private static UrlCheck mapRowToUrlCheck(ResultSet rs) throws SQLException {

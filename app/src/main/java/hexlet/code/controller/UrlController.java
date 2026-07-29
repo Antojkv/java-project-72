@@ -7,6 +7,7 @@ import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 import kong.unirest.Unirest;
 import kong.unirest.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -40,11 +41,8 @@ public class UrlController {
     public static final String PARAM_URL = "url";
     public static final String PARAM_CHECKS = "checks";
     public static final String PARAM_FLASH = "flash";
+    private static final int STATUS_UNPROCESSABLE_ENTITY = 422;
 
-    public static final int STATUS_UNPROCESSABLE_ENTITY = 422;
-    public static final int STATUS_NOT_FOUND = 404;
-    public static final int STATUS_INTERNAL_ERROR = 500;
-    public static final int STATUS_BAD_REQUEST = 400;
     public static final int CONNECT_TIMEOUT = 5000;
     public static final int SOCKET_TIMEOUT = 5000;
 
@@ -68,15 +66,25 @@ public class UrlController {
     }
 
     public static boolean isValidUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+
         try {
-            URI uri = new URI(url);
-            String host = uri.getHost();
-            if (host == null) {
-                String[] parts = uri.getSchemeSpecificPart().split("/");
-                host = parts.length > 0 ? parts[0] : "";
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                return false;
             }
-            return (uri.getScheme() != null && (uri.getScheme().equals("http") || uri.getScheme().equals("https")))
-                    && host != null && !host.isEmpty();
+
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+
+            boolean isValidScheme = scheme != null
+                    && (scheme.equals("http") || scheme.equals("https"));
+
+            boolean isValidHost = host != null && !host.isEmpty();
+
+            return isValidScheme && isValidHost;
         } catch (URISyntaxException e) {
             return false;
         }
@@ -111,7 +119,7 @@ public class UrlController {
     public static void listUrls(Context ctx) {
         try {
             var urls = UrlRepository.all();
-            var latestChecksMap = UrlCheckRepository.findLatestChecksForAllUrls();
+            var latestChecksMap = UrlCheckRepository.findLatestChecks();
 
             List<UrlWithLastCheckDto> urlDtos = new ArrayList<>();
             for (Url url : urls) {
@@ -126,45 +134,67 @@ public class UrlController {
             ctx.render(PATH_URLS_INDEX, Map.of("urls", urlDtos, PARAM_PAGE, page));
         } catch (Exception e) {
             log.error("Error rendering urls list", e);
-            ctx.status(STATUS_INTERNAL_ERROR).result("Internal server error: " + e.getMessage());
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).result("Internal server error: " + e.getMessage());
         }
     }
 
-    public static void createUrl(Context ctx) {
-        String rawUrl = ctx.formParam(PARAM_URL);
+    public static void createUrl(Context ctx) throws SQLException, URISyntaxException {
+        String inputUrl = ctx.formParam(PARAM_URL);
+        log.info("[createUrl] Received input URL: {}", inputUrl);
 
-        if (!isValidInputUrl(rawUrl)) {
+        if (!isValidInputUrl(inputUrl)) {
+            log.warn("[createUrl] Invalid input URL: {}", inputUrl);
             handleInvalidUrl(ctx, FLASH_ERROR_URL);
             return;
         }
 
         String normalizedUrl;
         try {
-            normalizedUrl = normalizeUrl(rawUrl);
+            normalizedUrl = normalizeUrl(inputUrl);
         } catch (URISyntaxException e) {
-            handleInvalidUrl(ctx, "Некорректный URL");
+            log.error("[createUrl] Failed to normalize URL due to syntax error", e);
+            handleInvalidUrl(ctx, FLASH_ERROR_URL);
             return;
         }
+        log.info("[createUrl] Normalized URL: {}", normalizedUrl);
 
         try {
             var existingUrlOpt = UrlRepository.findByName(normalizedUrl);
             if (existingUrlOpt.isPresent()) {
                 Url existingUrl = existingUrlOpt.get();
+                log.info("[createUrl] Duplicate URL found, redirecting to id={}", existingUrl.getId());
                 ctx.sessionAttribute(PARAM_FLASH, FLASH_DUPLICATE_URL);
                 ctx.redirect(PATH_URLS + "/" + existingUrl.getId());
                 return;
+            } else {
+                log.info("[createUrl] No duplicate found for normalized URL, proceeding to save");
             }
         } catch (SQLException e) {
+            log.error("[createUrl] Error while checking for duplicate URL", e);
             handleInvalidUrl(ctx, FLASH_ERROR_URL);
             return;
         }
 
+        Url urlToSave = new Url(normalizedUrl);
+        Long beforeSaveId = urlToSave.getId();
+        log.info("[createUrl] Before save: url={}, id={}", urlToSave.getName(), beforeSaveId);
+
         try {
-            Url url = new Url(normalizedUrl);
-            UrlRepository.save(url);
+            UrlRepository.save(urlToSave);
+            Long afterSaveId = urlToSave.getId();
+            log.info("[createUrl] After save: url={}, id={}", urlToSave.getName(), afterSaveId);
+
+            if (afterSaveId == null || afterSaveId <= 0) {
+                log.error("[createUrl] Save completed but ID is invalid: {}", afterSaveId);
+                handleInvalidUrl(ctx, FLASH_ERROR_URL);
+                return;
+            }
+
             ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_ADD);
-            ctx.redirect(PATH_URLS + "/" + url.getId());
+            ctx.redirect(PATH_URLS + "/" + afterSaveId);
+            log.info("[createUrl] Redirecting to /urls/{}", afterSaveId);
         } catch (SQLException e) {
+            log.error("[createUrl] SQLException while saving URL: url={}", normalizedUrl, e);
             handleInvalidUrl(ctx, FLASH_ERROR_URL);
         }
     }
@@ -176,13 +206,13 @@ public class UrlController {
             if (url.isPresent()) {
                 showUrlPage(ctx, id, url.get());
             } else {
-                ctx.status(STATUS_NOT_FOUND).result(FLASH_URL_NOT_FOUND);
+                ctx.status(HttpStatus.NOT_FOUND).result(FLASH_URL_NOT_FOUND);
             }
         } catch (NumberFormatException e) {
-            ctx.status(STATUS_BAD_REQUEST).result("Invalid ID format");
+            ctx.status(HttpStatus.BAD_REQUEST).result("Invalid ID format");
         } catch (Exception e) {
             log.error("Error rendering url page", e);
-            ctx.status(STATUS_INTERNAL_ERROR).result("Internal server error");
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).result("Internal server error");
         }
     }
 
@@ -192,12 +222,15 @@ public class UrlController {
             var url = UrlRepository.find(id);
 
             if (url.isEmpty()) {
-                ctx.status(STATUS_NOT_FOUND).result(FLASH_URL_NOT_FOUND);
+                ctx.status(HttpStatus.NOT_FOUND).result(FLASH_URL_NOT_FOUND);
                 return;
             }
             performUrlCheck(ctx, id, url.get());
+
+            ctx.redirect(PATH_URLS + "/" + id);
+
         } catch (NumberFormatException e) {
-            ctx.status(STATUS_BAD_REQUEST).result("Invalid ID format");
+            ctx.status(HttpStatus.BAD_REQUEST).result("Invalid ID format");
         } catch (Exception e) {
             log.error("Error performing URL check", e);
             ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
@@ -217,7 +250,7 @@ public class UrlController {
                 && accept != null && accept.contains("text/html")) {
             ctx.status(STATUS_UNPROCESSABLE_ENTITY);
         } else {
-            ctx.status(200);
+            ctx.status(HttpStatus.OK);
         }
 
         ctx.render(PATH_INDEX, Map.of(PARAM_PAGE, page));
@@ -232,19 +265,23 @@ public class UrlController {
         ctx.render(PATH_URLS_SHOW, Map.of(PARAM_URL, url, PARAM_PAGE, page, PARAM_CHECKS, checks));
     }
 
-    private static void performUrlCheck(Context ctx, Long id, Url url) throws Exception {
-        HttpResponse<String> response = Unirest.get(url.getName())
-                .connectTimeout(CONNECT_TIMEOUT)
-                .socketTimeout(SOCKET_TIMEOUT)
-                .asString();
+    private static void performUrlCheck(Context ctx, Long id, Url url) {
+        try {
+            HttpResponse<String> response = Unirest.get(url.getName())
+                    .connectTimeout(CONNECT_TIMEOUT)
+                    .socketTimeout(SOCKET_TIMEOUT)
+                    .asString();
 
-        int statusCode = response.getStatus();
-        if (isErrorStatusCode(statusCode)) {
+            int statusCode = response.getStatus();
+            if (isErrorStatusCode(statusCode)) {
+                ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
+                return;
+            }
+            saveCheckResult(ctx, id, response, statusCode);
+        } catch (Exception e) {
+            log.error("Error during URL check: {}", e.getMessage());
             ctx.sessionAttribute(PARAM_FLASH, FLASH_ERROR_CHECK);
-            ctx.redirect(PATH_URLS + "/" + id);
-            return;
         }
-        saveCheckResult(ctx, id, response, statusCode);
     }
 
     private static void saveCheckResult(Context ctx, Long id, HttpResponse<String> response, int statusCode)
@@ -265,6 +302,5 @@ public class UrlController {
         UrlCheckRepository.save(check);
 
         ctx.sessionAttribute(PARAM_FLASH, FLASH_SUCCESS_CHECK);
-        ctx.redirect(PATH_URLS + "/" + id);
     }
 }
