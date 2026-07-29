@@ -780,7 +780,6 @@ public class AppTest {
 
     @Test
     public void testStartWithValidPort() {
-        // Проверяем, что метод start не выбрасывает исключений
         Map<String, String> env = Map.of("PORT", "7071");
         assertThatCode(() -> {
             // Запускаем в отдельном потоке, чтобы не блокировать
