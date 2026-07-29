@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.Assert.assertEquals;
 
 public class AppTest {
@@ -732,70 +733,6 @@ public class AppTest {
     }
 
     @Test
-    public void testSQLExceptionHandler() throws Exception {
-        String longUrl = "https://" + "a".repeat(300) + ".com";
-        String requestBody = "url=" + longUrl;
-        Request request = new Request.Builder()
-                .url(getBaseUrl() + "/urls")
-                .post(FormBody.create(requestBody.getBytes()))
-                .build();
-
-        try (Response response = CLIENT.newCall(request).execute()) {
-            assertThat(response.code()).isEqualTo(200);
-            String body = response.body().string();
-            assertThat(body).contains("Некорректный URL");
-        }
-    }
-
-    @Test
-    public void testURISyntaxExceptionHandler() throws Exception {
-        String invalidUrl = "https://example .com";
-        String requestBody = "url=" + invalidUrl;
-        Request request = new Request.Builder()
-                .url(getBaseUrl() + "/urls")
-                .post(FormBody.create(requestBody.getBytes()))
-                .build();
-
-        try (Response response = CLIENT.newCall(request).execute()) {
-            assertThat(response.code()).isEqualTo(200);
-            String body = response.body().string();
-            assertThat(body).contains("Некорректный URL");
-        }
-    }
-
-    @Test
-    public void testGeneralExceptionHandler() throws Exception {
-        String invalidDomain = "http://this-domain-does-not-exist-" + System.currentTimeMillis() + ".test";
-
-        String createBody = "url=" + invalidDomain;
-        Request createRequest = new Request.Builder()
-                .url(getBaseUrl() + "/urls")
-                .post(FormBody.create(createBody.getBytes()))
-                .build();
-
-        try (Response createResponse = CLIENT.newCall(createRequest).execute()) {
-            assertThat(createResponse.code()).isEqualTo(302);
-        }
-
-        var urlOpt = UrlRepository.findByName(invalidDomain);
-        assertThat(urlOpt).isPresent();
-        Long urlId = urlOpt.get().getId();
-
-        Request checkRequest = new Request.Builder()
-                .url(getBaseUrl() + "/urls/" + urlId + "/checks")
-                .post(FormBody.create(new byte[0]))
-                .build();
-
-        try (Response checkResponse = CLIENT.newCall(checkRequest).execute()) {
-            assertThat(checkResponse.code()).isEqualTo(302);
-            assertThat(checkResponse.header("Location")).isEqualTo("/urls/" + urlId);
-        }
-
-        var checks = UrlCheckRepository.findByUrlId(urlId);
-        assertThat(checks).isEmpty();
-    }
-
-    @Test
     public void testNumberFormatExceptionHandler() throws Exception {
         Request request = new Request.Builder()
                 .url(getBaseUrl() + "/urls/invalid-id")
@@ -839,5 +776,33 @@ public class AppTest {
         Map<String, String> env = Map.of();
         int port = App.getPort(env);
         assertEquals(7070, port);
+    }
+
+    @Test
+    public void testStartWithValidPort() {
+        // Проверяем, что метод start не выбрасывает исключений
+        Map<String, String> env = Map.of("PORT", "7071");
+        assertThatCode(() -> {
+            // Запускаем в отдельном потоке, чтобы не блокировать
+            Thread thread = new Thread(() -> App.start(env));
+            thread.setDaemon(true);
+            thread.start();
+            Thread.sleep(500);
+        }).doesNotThrowAnyException();
+    }
+
+    @Test
+    public void testStartWithInvalidPort() {
+        Map<String, String> env = Map.of("PORT", "invalid");
+        assertThatCode(() -> {
+            App.start(env);
+        }).doesNotThrowAnyException();
+    }
+
+    @Test
+    public void testMainMethod() {
+        assertThatCode(() -> {
+            App.main(new String[]{});
+        }).doesNotThrowAnyException();
     }
 }

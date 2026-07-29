@@ -65,11 +65,13 @@ dependencies {
     implementation("io.javalin:javalin:6.7.0")
     implementation("io.javalin:javalin-rendering:6.7.0")
     implementation("io.javalin:javalin-bundle:6.7.0")
+    testImplementation("io.javalin:javalin-testtools:6.7.0")
     implementation("gg.jte:jte:3.2.4")
     implementation("org.jsoup:jsoup:1.18.3")
     implementation("com.konghq:unirest-java:3.14.5")
     implementation("org.jsoup:jsoup:1.18.3")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+
 
 }
 
