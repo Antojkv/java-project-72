@@ -90,7 +90,7 @@ application {
 }
 
 jacoco {
-    toolVersion = "0.8.9"
+    toolVersion = "0.8.11"
 }
 
 tasks.test {
@@ -132,12 +132,4 @@ tasks.shadowJar {
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs("jte-classes")
-        }
-    }
 }
