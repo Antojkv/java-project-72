@@ -25,6 +25,10 @@ public class App {
     public static final String PATH_URLS = "/urls";
 
     private static TemplateEngine createTemplateEngine() {
+        if (System.getenv("RENDER") != null) {
+            return TemplateEngine.createPrecompiled(ContentType.Html);
+        }
+
         ClassLoader classLoader = App.class.getClassLoader();
         ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
         System.out.println("Using ResourceCodeResolver for templates");

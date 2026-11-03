@@ -8,6 +8,7 @@ plugins {
     id("org.sonarqube") version "7.2.3.7755"
     id("jacoco")
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("gg.jte.gradle") version "3.2.4"
 }
 
 sonar {
@@ -120,6 +121,13 @@ tasks.jar {
     }
 }
 
+jte {
+    precompile()
+    sourceDirectory.set(file("src/main/resources/templates").toPath())
+    targetDirectory.set(file("jte-classes").toPath())
+    contentType.set(gg.jte.ContentType.Html)
+}
+
 tasks.shadowJar {
     archiveBaseName.set("app")
     archiveClassifier.set("")
@@ -129,6 +137,11 @@ tasks.shadowJar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(sourceSets.main.get().resources) {
         include("**/*")
+    }
+
+    dependsOn(tasks.precompileJte)
+    from(fileTree("jte-classes")) {
+        include("**/*.class")
     }
 }
 
