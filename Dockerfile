@@ -1,25 +1,18 @@
-WORKDIR /app
+# Образ для деплоя на render. Править его не нужно: сборка зовёт `make build`,
+# запуск зовёт `make render-start`, и всё, что меняется по шагам, живёт в app/Makefile.
+# Запуску нужен JDK, а не JRE: Jte компилирует шаблоны прямо в работающем приложении.
+FROM eclipse-temurin:21-jdk
 
-COPY app/gradle gradle
-COPY app/build.gradle.kts .
-COPY app/settings.gradle.kts .
-COPY app/gradlew .
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends make \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN chmod +x gradlew
+# Node.js нужен сборке стилей, Tailwind требует версию не ниже 20.
+COPY --from=node:24-slim /usr/local/ /usr/local/
 
-RUN ./gradlew --no-daemon dependencies
+WORKDIR /project
 
-COPY app/src src
-COPY app/config config
+COPY . .
+RUN make -C app build
 
-RUN ./gradlew --no-daemon precompileJte shadowJar
-
-FROM eclipse-temurin:21-jre
-
-WORKDIR /app
-
-COPY --from=build /app/build/libs/app.jar /app/app.jar
-
-EXPOSE 7070
-
-CMD ["java", "-jar", "/app/app.jar"]
+CMD ["make", "-C", "app", "render-start"]
