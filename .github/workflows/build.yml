@@ -36,4 +36,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cd app && ./gradlew sonarqube -Dsonar.projectKey=Antojkv_java-project-72 -Dsonar.organization=Antojkv --info
+        run: cd app && ./gradlew sonarqube -Dsonar.projectKey=Antojkv_java-project-72 -Dsonar.organization=antojkv --info
