@@ -34,6 +34,6 @@ jobs:
         run: cd app && ./gradlew clean test jacocoTestReport
       - name: Build and analyze
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONARTOKEN3 }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd app && ./gradlew sonarqube -Dsonar.projectKey=Antojkv_java-project-72 -Dsonar.organization=antojkv --info
