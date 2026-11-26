@@ -808,17 +808,17 @@ public class AppTest {
 
     @Test
     void testSQLExceptionHandlerOnlyBody() {
-        Javalin app = Javalin.create().start(0);
+        Javalin appInstance = Javalin.create().start(0);
 
         try {
 
-            app.get("/test-sql", ctx -> {
+            appInstance.get("/test-sql", ctx -> {
                 throw new SQLException("Simulated DB error");
             });
             var client = java.net.http.HttpClient.newHttpClient();
 
         } finally {
-            app.stop();
+            appInstance.stop();
         }
     }
 }
